@@ -15,8 +15,6 @@ The project demonstrates how raw CSV files are transformed into analytics-ready 
 
 # 📊 Dashboard
 
-> *(Replace this image with your final dashboard screenshot.)*
-
 ![Dashboard](screenshots/dashboard.png)
 
 ---
@@ -169,7 +167,7 @@ The dashboard enables stakeholders to answer questions such as:
 
 ## Apache Spark
 
-![Spark](screenshots/spark-master.png)
+![Spark](screenshots/spark.png)
 
 ---
 
