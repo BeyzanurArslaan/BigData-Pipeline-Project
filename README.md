@@ -1,95 +1,279 @@
-# Big Data Analytics Pipeline — Olist E-Commerce
+# 🚀 Big Data Analytics Pipeline with Apache Spark, Hadoop HDFS & Apache Superset
 
-A hands-on big data project built around the
-[Olist Brazilian E-Commerce public dataset](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce) —
-~100,000 real orders from Brazil's largest online marketplace (2016–2018).
+![Python](https://img.shields.io/badge/Python-3.10-blue)
+![Apache Spark](https://img.shields.io/badge/Apache-Spark-E25A1C)
+![Hadoop](https://img.shields.io/badge/Hadoop-HDFS-yellow)
+![Apache Hive](https://img.shields.io/badge/Apache-Hive-orange)
+![Apache Superset](https://img.shields.io/badge/Apache-Superset-20A6C9)
+![Docker](https://img.shields.io/badge/Docker-2496ED)
 
-The project is developed in stages. Each stage adds a new layer to the pipeline. More stages will be added over time.
+An end-to-end Big Data Analytics Pipeline built using **Apache Spark**, **Hadoop HDFS**, **Apache Hive**, and **Apache Superset** to analyze the Olist Brazilian E-Commerce dataset.
 
----
-
-## 📌 Important Notes
-
-### Submission
-Each student must **fork or clone this repository**, implement their solution, and submit by **opening a Pull Request (PR) back to this repository** with their completed work. PRs are the only accepted submission method.
-
-### Docker is Optional
-The Docker Compose files and scripts provided in this repo are **starter code only** — a reference setup to help you get up and running quickly. You are **not required** to use Docker. Feel free to run HDFS, Spark, and Superset however you prefer (local install, cloud, a different container setup, etc.), as long as the pipeline works end-to-end.
+The project demonstrates how raw CSV files are transformed into analytics-ready Parquet datasets and visualized through an interactive business intelligence dashboard.
 
 ---
 
-## Architecture (Phase 1)
+# 📊 Dashboard
+
+> *(Replace this image with your final dashboard screenshot.)*
+
+![Dashboard](screenshots/dashboard.png)
+
+---
+
+# 📌 Project Overview
+
+This project analyzes approximately **100,000 real e-commerce orders** from the Brazilian marketplace Olist.
+
+The complete pipeline includes:
+
+- Reading raw CSV files with Apache Spark
+- Transforming CSV files into Parquet format
+- Storing optimized datasets in Hadoop HDFS
+- Creating Hive external tables
+- Connecting Apache Superset
+- Building interactive dashboards for business analysis
+
+---
+
+# 🏗️ System Architecture
 
 ```
-[Olist Dataset — 9 CSV Tables]
-        |
-        v
-[Apache Spark]
-  · Reads CSVs
-  · Writes Parquet
-        |
-        v
-[HDFS or MinIO]
-        |
-        v
-[Apache Superset — Simple Charts]
+          Olist CSV Dataset
+                 │
+                 ▼
+           Apache Spark
+      (CSV → Parquet ETL)
+                 │
+                 ▼
+            Hadoop HDFS
+       (Distributed Storage)
+                 │
+                 ▼
+            Apache Hive
+        (External Tables)
+                 │
+                 ▼
+         Apache Superset
+      Business Intelligence
 ```
 
 ---
 
+# 🛠️ Technologies
 
-## Phases
-
-### ✅ Phase 1 — Ingest & Visualize
-
-> **Current task**
-
-- Download the Olist dataset (9 CSV tables).
-- Import all CSVs into **HDFS or MinIO** in **Parquet format** using Apache Spark.
-- Connect Apache Superset to the stored data and create a few simple charts/diagrams.
-
-No advanced transformations are required for this phase.
+- Apache Spark
+- Hadoop HDFS
+- Apache Hive
+- Apache Superset
+- Docker
+- Python
+- SQL
+- Parquet
 
 ---
 
-### 🔜 Phase 2 — Coming Soon
+# 📂 Dataset
 
-Details will be announced.
+**Brazilian E-Commerce Public Dataset by Olist**
+
+https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce
+
+Dataset contains approximately:
+
+- 99,441 Orders
+- 99,000+ Customers
+- Products
+- Sellers
+- Payments
+- Reviews
+- Geolocation
 
 ---
 
-## Docker Quick Start (Optional)
+# ⚙️ Data Processing Pipeline
 
-The following commands use the provided Docker Compose files as a starting point.
+### Step 1 — Data Ingestion
 
-**1. Create the shared network**
+The original Olist dataset consists of 9 CSV files.
+
+Apache Spark loads every CSV file and automatically infers the schema.
+
+---
+
+### Step 2 — Data Transformation
+
+Spark converts every CSV dataset into Parquet format.
+
+Benefits include:
+
+- Columnar storage
+- Faster analytical queries
+- Better compression
+- Reduced storage usage
+
+---
+
+### Step 3 — Distributed Storage
+
+The generated Parquet files are stored in Hadoop HDFS.
+
+---
+
+### Step 4 — Query Layer
+
+Hive external tables are created on top of the Parquet datasets.
+
+---
+
+### Step 5 — Business Intelligence
+
+Apache Superset connects to Hive and provides interactive dashboards.
+
+---
+
+# 📈 Dashboard Metrics
+
+The dashboard includes the following business insights:
+
+- Total Orders
+- Total Customers
+- Average Delivery Time
+- Monthly Active Customers
+- Order Distribution by Hour
+- Order Status Distribution
+- Orders by State
+- Customer Distribution by City
+- Top 10 Best Selling Products
+- Top 10 Sellers by Orders
+
+---
+
+# 💼 Business Insights
+
+The dashboard enables stakeholders to answer questions such as:
+
+- How many customers and orders exist?
+- Which products are sold most frequently?
+- Which sellers receive the highest number of orders?
+- Which Brazilian states generate the highest demand?
+- Which cities contain the largest customer base?
+- How does customer activity evolve over time?
+- What are the busiest shopping hours?
+- What percentage of orders are successfully delivered?
+- What is the average delivery time?
+
+---
+
+# 📸 Screenshots
+
+## Apache Spark
+
+![Spark](screenshots/spark-master.png)
+
+---
+
+## Hadoop HDFS
+
+![HDFS](screenshots/hdfs.png)
+
+---
+
+## Apache Superset Dashboard
+
+![Dashboard](screenshots/dashboard.png)
+
+---
+
+# 📁 Project Structure
+
+```text
+BigData-Pipeline-Project/
+│
+├── data/
+│   └── raw/
+│
+├── docker/
+│
+├── logs/
+│
+├── processing/
+│   ├── analysis.py
+│   ├── spark_session.py
+│   ├── config.py
+│   ├── logger.py
+│   └── __init__.py
+│
+├── reports/
+│   └── BigData_Analytics_Report.pdf
+│
+├── screenshots/
+│   ├── dashboard.png
+│   ├── spark-master.png
+│   └── hdfs.png
+│
+├── scripts/
+│
+├── visualization/
+│
+├── .gitignore
+└── README.md
+```
+
+---
+
+# ▶️ Running the Project
+
+Clone the repository:
 
 ```bash
-# Linux / macOS
-bash scripts/setup_network.sh
-
-# Windows (PowerShell)
-.\scripts\setup_network.ps1
+git clone https://github.com/BeyzanurArslaan/BigData-Pipeline-Project.git
 ```
 
-**2. Start the services**
+Start the required services:
 
 ```bash
 docker compose -f docker/docker-compose-hdfs.yml up -d
+
 docker compose -f docker/docker-compose-spark.yml up -d
+
 docker compose -f docker/docker-compose-superset.yml up -d
 ```
 
-| Service         | URL                       | Credentials   |
-|-----------------|---------------------------|---------------|
-| HDFS NameNode   | http://localhost:9870     |               |
-| Spark Master    | http://localhost:8080     |               |
-| Superset        | http://localhost:8088     | admin / admin |
+Open:
 
-**3. Stop everything**
+| Service | URL |
+|---------|-----|
+| HDFS NameNode | http://localhost:9870 |
+| Spark Master | http://localhost:8080 |
+| Apache Superset | http://localhost:8088 |
 
-```bash
-docker compose -f docker/docker-compose-superset.yml down
-docker compose -f docker/docker-compose-spark.yml down
-docker compose -f docker/docker-compose-hdfs.yml down
+Default Superset credentials:
+
 ```
+Username: admin
+Password: admin
+```
+
+---
+
+# ✅ Project Outcomes
+
+Successfully implemented:
+
+- CSV to Parquet conversion using Apache Spark
+- Distributed storage with Hadoop HDFS
+- Hive integration for SQL querying
+- Interactive Apache Superset dashboard
+- End-to-end Big Data Analytics Pipeline
+
+---
+
+# 👩‍💻 Author
+
+**Beyzanur Arslan**
+
+Software Engineering Student
+
+- GitHub: https://github.com/BeyzanurArslaan
+- LinkedIn:www.linkedin.com/in/beyzanur-arslan-ba18b832a

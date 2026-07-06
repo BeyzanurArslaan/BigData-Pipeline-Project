@@ -1,24 +1,39 @@
-# Downloaded dataset (do not commit)
+# ==========================
+# Dataset (do not commit)
+# ==========================
 data/raw/
 data/*.csv
+data/parquet/
 
+# ==========================
 # Python
+# ==========================
 __pycache__/
 *.py[cod]
 *.egg-info/
 .venv/
 venv/
 
+# ==========================
+# Logs
+# ==========================
+logs/
+
+# ==========================
+# macOS / Windows
+# ==========================
+.DS_Store
+Thumbs.db
+
+# ==========================
 # IDE
+# ==========================
 .idea/
 .vscode/
 *.iml
 
-# OS
-.DS_Store
-Thumbs.db
-
-# Spark output
+# ==========================
+# Spark
+# ==========================
 *.crc
 _SUCCESS
-
