@@ -40,21 +40,26 @@ services:
     networks:
       - bigdata-net
 
-  # ThriftServer runs in local mode — no worker needed, always gets resources
+  # ThriftServer (eski çalışan sürüm)
   spark-thriftserver:
     image: bde2020/spark-master:3.3.0-hadoop3.3
     container_name: spark-thriftserver
     hostname: spark-thriftserver
     user: "0"
+
     ports:
       - "10000:10000"
       - "4040:4040"
+
     environment:
       <<: *spark-env
+
     entrypoint: ["/bin/bash", "-c"]
+
     command:
       - |
         sleep 15
+
         /spark/bin/spark-submit \
           --class org.apache.spark.sql.hive.thriftserver.HiveThriftServer2 \
           --master local[2] \
@@ -62,9 +67,12 @@ services:
           --conf spark.ui.port=4040 \
           --conf spark.sql.warehouse.dir=/tmp/spark-warehouse \
           --conf spark.hadoop.fs.defaultFS=hdfs://namenode:9000
+
     depends_on:
       - spark-master
+
     volumes: *spark-volumes
+
     networks:
       - bigdata-net
 

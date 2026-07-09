@@ -1,4 +1,4 @@
-# 🚀 Big Data Analytics Pipeline with Apache Spark, Hadoop HDFS & Apache Superset
+# 🚀 Big Data Analytics Pipeline with Apache Spark, Hadoop HDFS, Apache Hive & Apache Superset
 
 ![Python](https://img.shields.io/badge/Python-3.10-blue)
 ![Apache Spark](https://img.shields.io/badge/Apache-Spark-E25A1C)
@@ -7,15 +7,15 @@
 ![Apache Superset](https://img.shields.io/badge/Apache-Superset-20A6C9)
 ![Docker](https://img.shields.io/badge/Docker-2496ED)
 
-An end-to-end Big Data Analytics Pipeline built using **Apache Spark**, **Hadoop HDFS**, **Apache Hive**, and **Apache Superset** to analyze the Olist Brazilian E-Commerce dataset.
+An end-to-end Big Data Analytics Pipeline built using **Apache Spark**, **Hadoop HDFS**, **Apache Hive**, and **Apache Superset** to process, store, query, and visualize the **Olist Brazilian E-Commerce Dataset**.
 
-The project demonstrates how raw CSV files are transformed into analytics-ready Parquet datasets and visualized through an interactive business intelligence dashboard.
+The project demonstrates a complete modern data engineering workflow, from raw CSV ingestion to interactive business intelligence dashboards.
 
 ---
 
 # 📊 Dashboard
 
-> *(Replace this image with your final dashboard screenshot.)*
+> Interactive dashboard built with Apache Superset.
 
 ![Dashboard](screenshots/dashboard.png)
 
@@ -23,16 +23,33 @@ The project demonstrates how raw CSV files are transformed into analytics-ready 
 
 # 📌 Project Overview
 
-This project analyzes approximately **100,000 real e-commerce orders** from the Brazilian marketplace Olist.
+This project analyzes approximately **100,000 real Brazilian e-commerce orders** using distributed big data technologies.
 
-The complete pipeline includes:
+The project was completed in **two phases**.
 
-- Reading raw CSV files with Apache Spark
-- Transforming CSV files into Parquet format
-- Storing optimized datasets in Hadoop HDFS
-- Creating Hive external tables
-- Connecting Apache Superset
-- Building interactive dashboards for business analysis
+## Phase 1
+
+- Read raw CSV datasets using Apache Spark
+- Transform CSV files into Parquet format
+- Store processed datasets in Hadoop HDFS
+- Create Hive external tables
+- Connect Apache Superset
+- Build an interactive business dashboard
+
+## Phase 2
+
+The second phase extends the pipeline by introducing a complete analytical warehouse design.
+
+Additional work includes:
+
+- Data Quality Assessment
+- ETL Architecture
+- ETL vs ELT comparison
+- Star Schema Design
+- Fact & Dimension Modeling
+- Business Questions Mapping
+- Business Analytics Dashboard
+- Documentation and technical report
 
 ---
 
@@ -69,7 +86,7 @@ The complete pipeline includes:
 - Docker
 - Python
 - SQL
-- Parquet
+- Apache Parquet
 
 ---
 
@@ -79,7 +96,7 @@ The complete pipeline includes:
 
 https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce
 
-Dataset contains approximately:
+Dataset includes approximately:
 
 - 99,441 Orders
 - 99,000+ Customers
@@ -93,75 +110,123 @@ Dataset contains approximately:
 
 # ⚙️ Data Processing Pipeline
 
-### Step 1 — Data Ingestion
+## Step 1 — Data Ingestion
 
-The original Olist dataset consists of 9 CSV files.
+The original Olist dataset consists of multiple CSV files.
 
-Apache Spark loads every CSV file and automatically infers the schema.
+Apache Spark loads every CSV dataset and automatically infers the schema.
 
 ---
 
-### Step 2 — Data Transformation
+## Step 2 — Data Transformation
 
-Spark converts every CSV dataset into Parquet format.
+Spark transforms the datasets into Apache Parquet format.
 
-Benefits include:
+Advantages include:
 
-- Columnar storage
+- Column-oriented storage
 - Faster analytical queries
 - Better compression
-- Reduced storage usage
+- Lower storage usage
 
 ---
 
-### Step 3 — Distributed Storage
+## Step 3 — Distributed Storage
 
-The generated Parquet files are stored in Hadoop HDFS.
-
----
-
-### Step 4 — Query Layer
-
-Hive external tables are created on top of the Parquet datasets.
+Processed Parquet datasets are stored in Hadoop HDFS.
 
 ---
 
-### Step 5 — Business Intelligence
+## Step 4 — Query Layer
 
-Apache Superset connects to Hive and provides interactive dashboards.
+Hive external tables are created on top of Parquet files, enabling SQL queries without duplicating data.
+
+---
+
+## Step 5 — Business Intelligence
+
+Apache Superset connects directly to Hive and generates interactive business dashboards.
+
+---
+
+# 🏛️ Data Warehouse Design (Phase 2)
+
+The analytical warehouse follows a **Star Schema** architecture.
+
+### Fact Table
+
+- fact_orders
+
+### Dimension Tables
+
+- dim_customers
+- dim_products
+- dim_sellers
+- dim_date
+
+The warehouse separates business measures from descriptive dimensions, making analytical queries simpler and significantly faster.
+
+---
+
+# 🔄 ETL Architecture
+
+The project follows a traditional **ETL (Extract, Transform, Load)** workflow.
+
+**Extract**
+
+- Read raw CSV files using Apache Spark
+
+**Transform**
+
+- Clean datasets
+- Join multiple tables
+- Convert to Parquet
+- Build analytical datasets
+
+**Load**
+
+- Store Parquet files in Hadoop HDFS
+- Create Hive external tables
+- Query data through Apache Superset
+
+The project also discusses the differences between **ETL**, **ELT**, and **dbt** as part of Phase 2.
 
 ---
 
 # 📈 Dashboard Metrics
 
-The dashboard includes the following business insights:
+The dashboard contains several KPI cards and business charts.
 
+## KPIs
+
+- Total Sales
 - Total Orders
 - Total Customers
-- Average Delivery Time
-- Monthly Active Customers
-- Order Distribution by Hour
+- Average Review Score
+
+## Charts
+
+- Payment Type Distribution
 - Order Status Distribution
-- Orders by State
-- Customer Distribution by City
-- Top 10 Best Selling Products
-- Top 10 Sellers by Orders
+- Revenue by Order Status
+- Review Score Distribution
+
+These visualizations provide a concise overview of marketplace performance and customer behavior.
 
 ---
 
-# 💼 Business Insights
+# 💼 Business Questions Answered
 
-The dashboard enables stakeholders to answer questions such as:
+The analytical warehouse supports business questions such as:
 
-- How many customers and orders exist?
-- Which products are sold most frequently?
-- Which sellers receive the highest number of orders?
-- Which Brazilian states generate the highest demand?
-- Which cities contain the largest customer base?
-- How does customer activity evolve over time?
-- What are the busiest shopping hours?
-- What percentage of orders are successfully delivered?
-- What is the average delivery time?
+- What is the total sales revenue?
+- How many orders have been placed?
+- How many unique customers exist?
+- Which payment methods are most frequently used?
+- What is the distribution of order statuses?
+- What is the average customer review score?
+- Which order statuses generate the highest revenue?
+- How can business performance be monitored using KPI dashboards?
 
 ---
 
@@ -195,29 +260,23 @@ BigData-Pipeline-Project/
 │
 ├── docker/
 │
-├── logs/
-│
 ├── processing/
-│   ├── analysis.py
-│   ├── spark_session.py
-│   ├── config.py
-│   ├── logger.py
-│   └── __init__.py
+│
+├── scripts/
+│
+├── visualization/
 │
 ├── reports/
-│   └── BigData_Analytics_Report.pdf
+│   └── Big_Data_Analytics_Pipeline_Report.pdf
 │
 ├── screenshots/
 │   ├── dashboard.png
 │   ├── spark-master.png
 │   └── hdfs.png
 │
-├── scripts/
-│
-├── visualization/
-│
-├── .gitignore
-└── README.md
+├── DESIGN.md
+├── README.md
+└── .gitignore
 ```
 
 ---
@@ -230,17 +289,25 @@ Clone the repository:
 git clone https://github.com/BeyzanurArslaan/BigData-Pipeline-Project.git
 ```
 
-Start the required services:
+Start Hadoop:
 
 ```bash
 docker compose -f docker/docker-compose-hdfs.yml up -d
+```
 
+Start Spark:
+
+```bash
 docker compose -f docker/docker-compose-spark.yml up -d
+```
 
+Start Apache Superset:
+
+```bash
 docker compose -f docker/docker-compose-superset.yml up -d
 ```
 
-Open:
+Open the services:
 
 | Service | URL |
 |---------|-----|
@@ -250,7 +317,7 @@ Open:
 
 Default Superset credentials:
 
-```
+```text
 Username: admin
 Password: admin
 ```
@@ -261,11 +328,28 @@ Password: admin
 
 Successfully implemented:
 
-- CSV to Parquet conversion using Apache Spark
-- Distributed storage with Hadoop HDFS
-- Hive integration for SQL querying
-- Interactive Apache Superset dashboard
-- End-to-end Big Data Analytics Pipeline
+- Apache Spark ETL Pipeline
+- CSV → Parquet Transformation
+- Hadoop HDFS Distributed Storage
+- Apache Hive External Tables
+- Star Schema Data Warehouse
+- Fact & Dimension Modeling
+- ETL Documentation
+- Business Question Mapping
+- Interactive Apache Superset Dashboard
+- End-to-End Big Data Analytics Pipeline
+
+---
+
+# 📄 Documentation
+
+The repository includes:
+
+- Final Project Report (Phase 1 + Phase 2)
+- DESIGN.md
+- README.md
+- Apache Superset Dashboard
+- Spark ETL Scripts
 
 ---
 
@@ -276,4 +360,4 @@ Successfully implemented:
 Software Engineering Student
 
 - GitHub: https://github.com/BeyzanurArslaan
-- LinkedIn:www.linkedin.com/in/beyzanur-arslan-ba18b832a
+- LinkedIn: https://www.linkedin.com/in/beyzanur-arslan-ba18b832a
