@@ -234,7 +234,7 @@ The analytical warehouse supports business questions such as:
 
 ## Apache Spark
 
-![Spark](screenshots/spark-master.png)
+![Spark](screenshots/spark.png)
 
 ---
 
