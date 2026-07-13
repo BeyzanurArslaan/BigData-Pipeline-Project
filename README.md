@@ -9,7 +9,7 @@
 
 An end-to-end Big Data Analytics Pipeline built using **Apache Spark**, **Hadoop HDFS**, **Apache Hive**, and **Apache Superset** to process, store, query, and visualize the **Olist Brazilian E-Commerce Dataset**.
 
-The project demonstrates a complete modern data engineering workflow, from raw CSV ingestion to interactive business intelligence dashboards.
+The project demonstrates a complete modern data engineering workflow, from raw CSV ingestion to analytical warehouse modeling and interactive business intelligence dashboards.
 
 ---
 
@@ -23,63 +23,96 @@ The project demonstrates a complete modern data engineering workflow, from raw C
 
 # 📌 Project Overview
 
-This project analyzes approximately **100,000 real Brazilian e-commerce orders** using distributed big data technologies.
+This project analyzes approximately **100,000 Brazilian e-commerce orders** using distributed data processing and business intelligence technologies.
 
-The project is completed in phases:
+The project is organized into phases.
 
-## Phase 1
+## Phase 1 — Data Ingestion and Processing
 
-- Read raw CSV datasets using Apache Spark
-- Transform CSV files into Parquet format
-- Store processed datasets in Hadoop HDFS
-- Create Hive external tables
-- Connect Apache Superset
-- Build an interactive business dashboard
+Phase 1 focuses on building the initial big data pipeline.
 
-## Phase 2
+Implemented tasks include:
 
-The second phase extends the pipeline with an analytical warehouse design built around an order-item fact table and supporting dimensions.
+- Reading raw CSV datasets using Apache Spark
+- Inferring dataset schemas
+- Transforming CSV files into Apache Parquet format
+- Storing curated Parquet datasets in Hadoop HDFS
+- Creating Hive external tables
+- Connecting Apache Superset to Hive
+- Building an interactive business dashboard
 
-Raw CSV files are read from the mounted local directory at `/app/data/raw`. Curated Parquet datasets are stored in HDFS under `hdfs://namenode:9000/olist/parquet`, and the Phase 2 warehouse writes its fact and dimension tables under `hdfs://namenode:9000/olist/warehouse`.
+Raw CSV files are mounted locally under:
 
-Additional work includes:
+```text
+/app/data/raw
+```
 
-- Data Quality Assessment
-- ETL Architecture
-- ETL vs ELT comparison and architectural alternatives such as dbt
-- Star Schema Design
-- Fact & Dimension Modeling
-- Business Questions Mapping
-- Business Analytics Dashboard
-- Documentation and technical report
+Curated Phase 1 Parquet datasets are stored in HDFS under:
 
-## Phase 3 — Planned
+```text
+hdfs://namenode:9000/olist/parquet
+```
 
-Future work is planned around orchestration and transformation maturity:
+## Phase 2 — Data Warehouse and Business Analytics
 
-- Apache Airflow for scheduled orchestration
+Phase 2 extends the pipeline with a star-schema analytical warehouse.
+
+Implemented tasks include:
+
+- Data quality assessment
+- ETL architecture design
+- ETL vs ELT comparison
+- Discussion of dbt as an architectural alternative
+- Star schema design
+- Fact and dimension modeling
+- Business-question mapping
+- Business analytics dashboard development
+- Technical documentation
+
+The Phase 2 warehouse stores fact and dimension tables under:
+
+```text
+hdfs://namenode:9000/olist/warehouse
+```
+
+The analytical model is built around an order-item fact table.
+
+## Phase 3 — Planned Reconstruction
+
+Phase 3 is planned as a future extension.
+
+Planned work includes:
+
+- Apache Airflow for scheduling, orchestration, and monitoring
 - dbt for modular SQL transformations and testing
-- Incremental loading strategies
-- Additional automation and data quality checks
+- Bronze, Silver, and Gold Medallion Architecture layers
+- Incremental data loading
+- Automated data quality checks
+- Improved observability and pipeline monitoring
+
+Airflow and dbt are not currently implemented.
 
 ---
 
 # 🏗️ System Architecture
 
-```
+```text
           Olist CSV Dataset
                  │
                  ▼
            Apache Spark
-      (CSV → Parquet ETL)
+      CSV Ingestion and ETL
+                 │
+                 ▼
+         Apache Parquet
                  │
                  ▼
             Hadoop HDFS
-       (Distributed Storage)
+       Distributed Storage
                  │
                  ▼
             Apache Hive
-        (External Tables)
+       Metadata and SQL Layer
                  │
                  ▼
          Apache Superset
@@ -103,19 +136,36 @@ Future work is planned around orchestration and transformation maturity:
 
 # 📂 Dataset
 
-**Brazilian E-Commerce Public Dataset by Olist**
+The project uses the **Brazilian E-Commerce Public Dataset by Olist**.
+
+Dataset source:
 
 https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce
 
-Dataset includes approximately:
+The source contains approximately:
 
-- 99,441 Orders
-- 99,000+ Customers
-- Products
-- Sellers
-- Payments
-- Reviews
-- Geolocation
+- 99,441 orders
+- 99,000+ customers
+- 112,000+ order items
+- 104,000+ payment records
+- 100,000+ reviews
+- 33,000+ products
+- 3,000+ sellers
+- 1 million geolocation records
+
+Main source files:
+
+| File | Approximate Rows | Description |
+|---|---:|---|
+| `olist_orders_dataset.csv` | 100k | Order lifecycle, timestamps, and status |
+| `olist_order_items_dataset.csv` | 112k | Product, seller, price, and freight information |
+| `olist_order_payments_dataset.csv` | 104k | Payment type, installments, and payment value |
+| `olist_order_reviews_dataset.csv` | 100k | Review scores and customer comments |
+| `olist_customers_dataset.csv` | 100k | Customer city, state, and ZIP code |
+| `olist_sellers_dataset.csv` | 3k | Seller city, state, and ZIP code |
+| `olist_products_dataset.csv` | 33k | Product category, dimensions, and weight |
+| `olist_geolocation_dataset.csv` | 1M | ZIP code, latitude, and longitude |
+| `product_category_name_translation.csv` | 71 | Portuguese-to-English category translation |
 
 ---
 
@@ -123,9 +173,11 @@ Dataset includes approximately:
 
 ## Step 1 — Data Ingestion
 
-The original Olist dataset consists of multiple CSV files.
+Apache Spark reads the raw CSV files from the mounted local directory.
 
-Apache Spark loads every CSV dataset and automatically infers the schema.
+Local input files are converted to valid local URIs using `Path.resolve().as_uri()`.
+
+Spark schema inference is enabled so numeric, date, and string fields are represented using appropriate data types.
 
 ## Step 2 — Data Transformation
 
@@ -136,117 +188,223 @@ Advantages include:
 - Column-oriented storage
 - Faster analytical queries
 - Better compression
-- Lower storage usage
+- Reduced storage usage
+- Improved compatibility with analytical engines
 
 ## Step 3 — Distributed Storage
 
-Processed Parquet datasets are stored in Hadoop HDFS.
+Processed Parquet datasets are written to Hadoop HDFS.
+
+Phase 1 datasets:
+
+```text
+hdfs://namenode:9000/olist/parquet
+```
+
+Phase 2 warehouse tables:
+
+```text
+hdfs://namenode:9000/olist/warehouse
+```
 
 ## Step 4 — Query Layer
 
-Hive external tables can be created on top of Parquet files, enabling SQL queries without duplicating data.
+Apache Hive provides SQL access to the Parquet datasets.
+
+Hive external tables reference the underlying Parquet files without duplicating the data.
 
 ## Step 5 — Business Intelligence
 
-Apache Superset connects directly to Hive and generates interactive business dashboards.
+Apache Superset connects to Hive through Spark ThriftServer and provides interactive KPI cards and analytical charts.
 
 ---
 
-# 🏛️ Data Warehouse Design (Phase 2)
+# 🏛️ Data Warehouse Design
 
 The analytical warehouse follows a **Star Schema** architecture.
 
-### Fact Table
+## Fact Table
 
-`fact_orders` is an **order-item fact table** with one row per `order_id` + `order_item_id`.
+### `fact_orders`
 
-Measures and derived columns:
+`fact_orders` is an **order-item fact table**.
 
+Its grain is:
+
+```text
+one row per order_id + order_item_id
+```
+
+This grain supports product-, seller-, customer-, order-, and payment-level analysis while preventing duplicate revenue caused by joining multiple payment rows directly to multiple order items.
+
+Important measures and derived columns include:
+
+- `price`
+- `freight_value`
 - `item_gross_value`
 - `order_items_gross_total`
 - `order_payment_value`
 - `allocated_payment_value`
-- `price`
-- `freight_value`
 - `review_score`
 - `primary_payment_installments`
 
-Grouping column:
+Important grouping columns include:
 
+- `order_status`
 - `primary_payment_type`
 
-Fact grain note: order-level payments are aggregated before joining to order items, and `allocated_payment_value` is computed proportionally from each item's gross value so revenue is not multiplied across payment rows.
+## Payment Allocation Logic
 
-### Dimension Tables
+Payment records are first aggregated at order level before being joined to order items.
 
-- `dim_customers`
-- `dim_products`
-- `dim_sellers`
-- `dim_date`
+Order-level payment value is allocated proportionally to each item:
 
-The warehouse separates business measures from descriptive dimensions, making analytical queries simpler and significantly faster.
+```text
+item_gross_value = price + freight_value
+```
+
+```text
+allocated_payment_value =
+    order_payment_value
+    × item_gross_value
+    ÷ order_items_gross_total
+```
+
+This prevents revenue from being multiplied when an order contains multiple items or multiple payment records.
+
+## Dimension Tables
+
+### `dim_customers`
+
+Contains customer attributes such as:
+
+- `customer_id`
+- `customer_unique_id`
+- `customer_city`
+- `customer_state`
+- `customer_zip_code_prefix`
+
+### `dim_products`
+
+Contains product attributes such as:
+
+- `product_id`
+- `product_category_name`
+- `product_weight_g`
+- Product dimensions
+
+### `dim_sellers`
+
+Contains seller attributes such as:
+
+- `seller_id`
+- `seller_city`
+- `seller_state`
+- `seller_zip_code_prefix`
+
+### `dim_date`
+
+Contains date attributes such as:
+
+- `date_key`
+- `date`
+- `year`
+- `month`
+- `day`
+
+Dimension builders preserve one row per dimension key using `dropDuplicates`.
 
 ---
 
 # 🔄 ETL Architecture
 
-The project follows a traditional **ETL (Extract, Transform, Load)** workflow.
+The project follows a traditional **ETL** workflow.
 
-**Extract**
+## Extract
 
 - Read raw CSV files using Apache Spark
+- Load source datasets into Spark DataFrames
 
-**Transform**
+## Transform
 
-- Clean datasets
-- Join multiple tables
-- Convert to Parquet
-- Build analytical datasets
+- Infer schemas
+- Cast numeric columns
+- Select required attributes
+- Deduplicate dimension entities
+- Aggregate payment records
+- Join source datasets
+- Build fact and dimension tables
+- Convert results into Parquet
 
-**Load**
+## Load
 
-- Store Parquet files in Hadoop HDFS
-- Create Hive external tables
+- Write curated datasets to Hadoop HDFS
+- Store warehouse tables in HDFS
+- Register tables through Hive
 - Query data through Apache Superset
 
-The project also discusses the differences between **ETL**, **ELT**, and **dbt** as architectural alternatives. `Airflow` is mentioned only as a possible future scheduler rather than an implemented component.
+## ETL vs ELT
+
+ETL was selected because Spark performs distributed transformations before data is exposed to the analytical layer.
+
+In an ELT architecture, raw data would first be loaded into the warehouse and transformed later using SQL.
+
+dbt is discussed as a possible future transformation framework because it supports:
+
+- Modular SQL models
+- Testing
+- Documentation
+- Lineage
+- Version-controlled transformations
+
+dbt is not currently implemented in this repository.
+
+---
+
+# 💼 Business Questions
+
+The analytical warehouse supports the following business questions:
+
+| Business Question | Fact Table | Main Dimensions |
+|---|---|---|
+| Monthly revenue | `fact_orders` | `dim_date` |
+| Revenue by product category | `fact_orders` | `dim_products` |
+| Top-performing sellers | `fact_orders` | `dim_sellers` |
+| Sales by customer state | `fact_orders` | `dim_customers` |
+| Payment method trends | `fact_orders` | `primary_payment_type` |
+| Average review score by category | `fact_orders` | `dim_products` |
+| Revenue by order status | `fact_orders` | `order_status` |
+
+Average delivery time by state is identified as a future extension because the current fact table does not include all delivery-duration fields required for that analysis.
 
 ---
 
 # 📈 Dashboard Metrics
 
-The dashboard contains several KPI cards and business charts.
+The Apache Superset dashboard contains KPI cards and business-oriented visualizations.
 
 ## KPIs
 
-- Total Sales (`sum(allocated_payment_value)`)
-- Total Orders (`count(distinct order_id)`)
-- Total Customers
-- Average Review Score (`avg(review_score)`)
+- Total Sales  
+  `SUM(allocated_payment_value)`
+
+- Total Orders  
+  `COUNT(DISTINCT order_id)`
+
+- Total Customers  
+  `COUNT(DISTINCT customer_id)`
+
+- Average Review Score  
+  `AVG(review_score)`
 
 ## Charts
 
-- Payment Type Distribution by `primary_payment_type`
+- Payment Type Distribution using `primary_payment_type`
 - Order Status Distribution
 - Revenue by Order Status using `allocated_payment_value`
 - Review Score Distribution
 
-These visualizations provide a concise overview of marketplace performance and customer behavior.
-
----
-
-# 💼 Business Questions Answered
-
-The analytical warehouse supports business questions such as:
-
-- What is the total allocated sales revenue?
-- How many distinct orders have been placed?
-- How many unique customers exist?
-- Which primary payment methods are most frequently used?
-- What is the distribution of order statuses?
-- What is the average customer review score?
-- Which order statuses generate the highest allocated revenue?
-- How can business performance be monitored using KPI dashboards?
+These visualizations provide a concise overview of marketplace performance, payment behavior, order fulfillment, and customer satisfaction.
 
 ---
 
@@ -256,17 +414,21 @@ The analytical warehouse supports business questions such as:
 
 ![Spark](screenshots/spark.png)
 
----
-
 ## Hadoop HDFS
 
 ![HDFS](screenshots/hdfs.png)
 
----
-
 ## Apache Superset Dashboard
 
 ![Dashboard](screenshots/dashboard.png)
+
+## Phase 2 Dashboard
+
+![Phase 2 Dashboard](screenshots/dashboard_phase2_1.png)
+
+![Phase 2 Dashboard](screenshots/dashboard_phase2_2.png)
+
+![Phase 2 Dashboard](screenshots/dashboard_phase2_3.png)
 
 ---
 
@@ -335,6 +497,7 @@ Clone the repository:
 
 ```bash
 git clone https://github.com/BeyzanurArslaan/BigData-Pipeline-Project.git
+cd BigData-Pipeline-Project
 ```
 
 Start Hadoop:
@@ -355,22 +518,80 @@ Start Apache Superset:
 docker compose -f docker/docker-compose-superset.yml up -d
 ```
 
-Open the services:
+Check running services:
 
-| Service | URL | Credentials |
-|---------|-----|-------------|
-| HDFS NameNode | http://localhost:9870 | |
-| Spark Master | http://localhost:8080 | |
-| Apache Superset | http://localhost:8088 | admin / admin (local demo only; use environment variables and strong credentials for non-local deployments) |
+```bash
+docker ps
+```
 
-Default Superset credentials:
+Open the interfaces:
+
+| Service | URL |
+|---|---|
+| HDFS NameNode | http://localhost:9870 |
+| Spark Master | http://localhost:8080 |
+| Apache Superset | http://localhost:8088 |
+
+## Superset Local Demo Credentials
 
 ```text
 Username: admin
 Password: admin
 ```
 
-These credentials are for local demos only. Use environment variables and strong, unique credentials for any non-local deployment.
+These credentials are for local demonstrations only.
+
+Use environment variables and strong, unique credentials for non-local deployments.
+
+---
+
+# ▶️ Running Spark Jobs
+
+Enter the Spark container:
+
+```bash
+docker exec -it spark-master bash
+```
+
+Move to the mounted project directory:
+
+```bash
+cd /app
+```
+
+Run Phase 1 ingestion:
+
+```bash
+PYTHONPATH=/app \
+/spark/bin/spark-submit processing/analysis.py
+```
+
+Run warehouse builders:
+
+```bash
+PYTHONPATH=/app \
+/spark/bin/spark-submit processing/warehouse/build_fact_orders.py
+```
+
+```bash
+PYTHONPATH=/app \
+/spark/bin/spark-submit processing/warehouse/build_dim_customers.py
+```
+
+```bash
+PYTHONPATH=/app \
+/spark/bin/spark-submit processing/warehouse/build_dim_products.py
+```
+
+```bash
+PYTHONPATH=/app \
+/spark/bin/spark-submit processing/warehouse/build_dim_sellers.py
+```
+
+```bash
+PYTHONPATH=/app \
+/spark/bin/spark-submit processing/warehouse/build_dim_date.py
+```
 
 ---
 
@@ -378,16 +599,17 @@ These credentials are for local demos only. Use environment variables and strong
 
 Successfully implemented:
 
-- Apache Spark ETL Pipeline
-- CSV → Parquet Transformation
-- Hadoop HDFS Distributed Storage
-- Apache Hive External Tables
-- Star Schema Data Warehouse
-- Fact & Dimension Modeling
-- ETL Documentation
-- Business Question Mapping
-- Interactive Apache Superset Dashboard
-- End-to-End Big Data Analytics Pipeline
+- Apache Spark ETL pipeline
+- CSV-to-Parquet transformation
+- Hadoop HDFS distributed storage
+- Apache Hive SQL integration
+- Star schema data warehouse
+- Order-item fact table
+- Fact and dimension modeling
+- Payment aggregation and allocation
+- Business-question mapping
+- Interactive Apache Superset dashboard
+- End-to-end big data analytics workflow
 
 ---
 
@@ -395,11 +617,12 @@ Successfully implemented:
 
 The repository includes:
 
-- Final Project Report (Phase 1 + Phase 2)
-- DESIGN.md
-- README.md
-- Apache Superset Dashboard
-- Spark ETL Scripts
+- Final project report
+- `README.md`
+- `DESIGN.md`
+- Apache Superset dashboard screenshots
+- Spark ingestion scripts
+- Spark warehouse scripts
 
 ---
 
