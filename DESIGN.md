@@ -67,6 +67,8 @@ Apache Spark performs:
 
 Hadoop HDFS stores all processed datasets in distributed storage.
 
+Phase 1 writes curated Parquet datasets to the configured HDFS Parquet URI, and Phase 2 writes the warehouse fact and dimension tables to the configured HDFS warehouse URI. Raw CSV inputs remain mounted locally inside the container filesystem.
+
 Benefits include:
 
 - Fault tolerance
@@ -127,7 +129,7 @@ This project uses the ETL approach because all transformations are completed bef
 
 Compared to ELT, ETL reduces dashboard query complexity and improves analytical performance.
 
-The project documentation also discusses modern ELT architectures and dbt as alternative transformation approaches.
+The project documentation also discusses modern ELT architectures and dbt as alternative transformation approaches. Apache Airflow is treated as a future orchestration option rather than an implemented component.
 
 ---
 
@@ -139,20 +141,33 @@ A Star Schema was implemented for analytical reporting.
 
 **fact_orders**
 
+Order-item fact table with one row per `order_id` + `order_item_id`.
+
 Measures:
 
-- payment_value
+- item_gross_value
+- order_items_gross_total
+- order_payment_value
+- allocated_payment_value
 - price
 - freight_value
 - review_score
-- payment_installments
+- primary_payment_installments
 
 Keys:
 
+- order_id
+- order_item_id
 - customer_id
 - seller_id
 - product_id
 - date_key
+
+Primary grouping column:
+
+- primary_payment_type
+
+Order-level payments are aggregated before joining to order items, and `allocated_payment_value` is allocated proportionally from each item's gross value so revenue is not duplicated across payment rows.
 
 ---
 
@@ -180,10 +195,10 @@ Date dimension used for time-based analysis.
 
 The warehouse was designed to answer common analytical questions such as:
 
-- What is the total sales revenue?
-- How many orders exist?
+- What is the total allocated sales revenue?
+- How many distinct orders exist?
 - How many unique customers are there?
-- Which payment methods are most popular?
+- Which primary payment methods are most popular?
 - Which order statuses occur most frequently?
 - What is the average customer review score?
 
@@ -195,16 +210,16 @@ Apache Superset was used to create an interactive dashboard.
 
 ## KPI Cards
 
-- Total Sales
-- Total Orders
+- Total Sales (`sum(allocated_payment_value)`)
+- Total Orders (`count(distinct order_id)`)
 - Total Customers
-- Average Review Score
+- Average Review Score (`avg(review_score)`)
 
 ## Visualizations
 
-- Payment Type Distribution
+- Payment Type Distribution by `primary_payment_type`
 - Order Status Distribution
-- Revenue by Order Status
+- Revenue by Order Status using `allocated_payment_value`
 - Review Score Distribution
 
 These visualizations provide a concise overview of marketplace performance and support business decision-making.

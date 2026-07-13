@@ -32,19 +32,21 @@ The project was completed in **two phases**.
 - Read raw CSV datasets using Apache Spark
 - Transform CSV files into Parquet format
 - Store processed datasets in Hadoop HDFS
-- Create Hive external tables
+- Prepare queryable warehouse tables
 - Connect Apache Superset
 - Build an interactive business dashboard
 
 ## Phase 2
 
-The second phase extends the pipeline by introducing a complete analytical warehouse design.
+The second phase extends the pipeline by introducing a complete analytical warehouse design built around an order-item fact table and supporting dimensions.
+
+Raw CSV files are read from the mounted local directory at `/app/data/raw`. Curated Parquet datasets are stored in HDFS under `hdfs://namenode:9000/olist/parquet`, and the Phase 2 warehouse writes its fact and dimension tables under `hdfs://namenode:9000/olist/warehouse`.
 
 Additional work includes:
 
 - Data Quality Assessment
 - ETL Architecture
-- ETL vs ELT comparison
+- ETL vs ELT comparison and architectural alternatives such as dbt
 - Star Schema Design
 - Fact & Dimension Modeling
 - Business Questions Mapping
@@ -139,7 +141,7 @@ Processed Parquet datasets are stored in Hadoop HDFS.
 
 ## Step 4 — Query Layer
 
-Hive external tables are created on top of Parquet files, enabling SQL queries without duplicating data.
+Hive external tables can be created on top of Parquet files, enabling SQL queries without duplicating data.
 
 ---
 
@@ -155,7 +157,24 @@ The analytical warehouse follows a **Star Schema** architecture.
 
 ### Fact Table
 
-- fact_orders
+`fact_orders` is an **order-item fact table** with one row per `order_id` + `order_item_id`.
+
+Measures and derived columns:
+
+- `item_gross_value`
+- `order_items_gross_total`
+- `order_payment_value`
+- `allocated_payment_value`
+- `price`
+- `freight_value`
+- `review_score`
+- `primary_payment_installments`
+
+Grouping column:
+
+- `primary_payment_type`
+
+Fact grain note: order-level payments are aggregated before joining to order items, and `allocated_payment_value` is computed proportionally from each item's gross value so revenue is not multiplied across payment rows.
 
 ### Dimension Tables
 
@@ -189,7 +208,7 @@ The project follows a traditional **ETL (Extract, Transform, Load)** workflow.
 - Create Hive external tables
 - Query data through Apache Superset
 
-The project also discusses the differences between **ETL**, **ELT**, and **dbt** as part of Phase 2.
+The project also discusses the differences between **ETL**, **ELT**, and **dbt** as architectural alternatives. `Airflow` is mentioned as a possible future scheduler rather than an implemented component.
 
 ---
 
@@ -199,16 +218,16 @@ The dashboard contains several KPI cards and business charts.
 
 ## KPIs
 
-- Total Sales
-- Total Orders
+- Total Sales (`sum(allocated_payment_value)`)
+- Total Orders (`count(distinct order_id)`)
 - Total Customers
-- Average Review Score
+- Average Review Score (`avg(review_score)`)
 
 ## Charts
 
-- Payment Type Distribution
+- Payment Type Distribution by `primary_payment_type`
 - Order Status Distribution
-- Revenue by Order Status
+- Revenue by Order Status using `allocated_payment_value`
 - Review Score Distribution
 
 These visualizations provide a concise overview of marketplace performance and customer behavior.
@@ -219,13 +238,13 @@ These visualizations provide a concise overview of marketplace performance and c
 
 The analytical warehouse supports business questions such as:
 
-- What is the total sales revenue?
-- How many orders have been placed?
+- What is the total allocated sales revenue?
+- How many distinct orders have been placed?
 - How many unique customers exist?
-- Which payment methods are most frequently used?
+- Which primary payment methods are most frequently used?
 - What is the distribution of order statuses?
 - What is the average customer review score?
-- Which order statuses generate the highest revenue?
+- Which order statuses generate the highest allocated revenue?
 - How can business performance be monitored using KPI dashboards?
 
 ---
@@ -255,24 +274,52 @@ The analytical warehouse supports business questions such as:
 ```text
 BigData-Pipeline-Project/
 │
-├── data/
-│   └── raw/
-│
 ├── docker/
+│   ├── Dockerfile.dev
+│   ├── Dockerfile.superset
+│   ├── docker-compose-dev.yml
+│   ├── docker-compose-hdfs.yml
+│   ├── docker-compose-minio.yml
+│   ├── docker-compose-spark.yml
+│   └── docker-compose-superset.yml
 │
 ├── processing/
+│   ├── __init__.py
+│   ├── analysis.py
+│   ├── config.py
+│   ├── logger.py
+│   ├── spark_session.py
+│   ├── quality/
+│   │   └── __init__.py
+│   ├── utils/
+│   │   └── __init__.py
+│   └── warehouse/
+│       ├── __init__.py
+│       ├── build_dim_customers.py
+│       ├── build_dim_date.py
+│       ├── build_dim_products.py
+│       ├── build_dim_sellers.py
+│       └── build_fact_orders.py
 │
 ├── scripts/
+│   ├── download_dataset.py
+│   ├── setup_network.ps1
+│   └── setup_network.sh
 │
 ├── visualization/
+│   └── register_tables.py
 │
 ├── reports/
-│   └── Big_Data_Analytics_Pipeline_Report.pdf
+│   ├── Big_Data_Analytics_Pipeline_Report.pdf
+│   └── REPORT.md
 │
 ├── screenshots/
 │   ├── dashboard.png
-│   ├── spark-master.png
-│   └── hdfs.png
+│   ├── dashboard_phase2_1.png
+│   ├── dashboard_phase2_2.png
+│   ├── dashboard_phase2_3.png
+│   ├── hdfs.png
+│   └── spark.png
 │
 ├── DESIGN.md
 ├── README.md
@@ -322,6 +369,8 @@ Username: admin
 Password: admin
 ```
 
+These credentials are for local demos only. Use environment variables and strong, unique credentials for any non-local deployment.
+
 ---
 
 # ✅ Project Outcomes
@@ -331,7 +380,6 @@ Successfully implemented:
 - Apache Spark ETL Pipeline
 - CSV → Parquet Transformation
 - Hadoop HDFS Distributed Storage
-- Apache Hive External Tables
 - Star Schema Data Warehouse
 - Fact & Dimension Modeling
 - ETL Documentation
@@ -360,4 +408,4 @@ The repository includes:
 Software Engineering Student
 
 - GitHub: https://github.com/BeyzanurArslaan
-- LinkedIn: https://www.linkedin.com/in/beyzanur-arslan-ba18b832a
+- LinkedIn: [Beyzanur Arslan](https://www.linkedin.com/in/beyzanur-arslan-ba18b832a/)

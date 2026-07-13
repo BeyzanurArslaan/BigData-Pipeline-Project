@@ -1,49 +1,37 @@
-from pathlib import Path
+from pyspark.sql import functions as F
 
-from processing.config import PARQUET_OUTPUT_DIR
+from processing.config import HDFS_PARQUET_URI, HDFS_WAREHOUSE_URI, join_hdfs_uri
 from processing.spark_session import create_spark_session
 
 
 def build_dim_sellers():
-
     spark = create_spark_session()
 
-    parquet_dir = Path(PARQUET_OUTPUT_DIR)
-
-    sellers = spark.read.parquet(
-        f"file://{parquet_dir / 'olist_sellers_dataset'}"
-    )
-
-    dim_sellers = (
-        sellers
-        .select(
-            "seller_id",
-            "seller_city",
-            "seller_state",
-            "seller_zip_code_prefix"
+    try:
+        sellers = spark.read.parquet(
+            join_hdfs_uri(HDFS_PARQUET_URI, "olist_sellers_dataset")
         )
-        .dropDuplicates(["seller_id"])
-    )
 
-    rows = dim_sellers.count()
+        dim_sellers = (
+            sellers
+            .select(
+                "seller_id",
+                "seller_city",
+                "seller_state",
+                F.col("seller_zip_code_prefix").cast("int").alias("seller_zip_code_prefix"),
+            )
+            .dropDuplicates(["seller_id"])
+        )
 
-    output = parquet_dir / "dim_sellers"
+        dim_sellers.write.mode("overwrite").parquet(
+            join_hdfs_uri(HDFS_WAREHOUSE_URI, "dim_sellers")
+        )
 
-    (
-        dim_sellers
-        .coalesce(1)
-        .write
-        .mode("overwrite")
-        .parquet(f"file://{output}")
-    )
-
-    print("=" * 60)
-    print("DIM_SELLERS CREATED")
-    print(f"Rows : {rows}")
-    print(f"Saved: {output}")
-    print("=" * 60)
-
-    spark.stop()
+        print("=" * 60)
+        print("DIM_SELLERS CREATED")
+        print("=" * 60)
+    finally:
+        spark.stop()
 
 
 if __name__ == "__main__":

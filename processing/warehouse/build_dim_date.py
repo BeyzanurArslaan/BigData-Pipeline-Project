@@ -1,80 +1,42 @@
-from pathlib import Path
+from pyspark.sql import functions as F
 
-from pyspark.sql.functions import (
-    col,
-    date_format,
-    to_date,
-    year,
-    month,
-    dayofmonth
-)
-
-from processing.config import PARQUET_OUTPUT_DIR
+from processing.config import HDFS_PARQUET_URI, HDFS_WAREHOUSE_URI, join_hdfs_uri
 from processing.spark_session import create_spark_session
 
 
 def build_dim_date():
-
     spark = create_spark_session()
 
-    parquet_dir = Path(PARQUET_OUTPUT_DIR)
-
-    orders = spark.read.parquet(
-        f"file://{parquet_dir / 'olist_orders_dataset'}"
-    )
-
-    dim_date = (
-        orders
-        .select("order_purchase_timestamp")
-        .withColumn(
-            "date",
-            to_date(col("order_purchase_timestamp"))
+    try:
+        orders = spark.read.parquet(
+            join_hdfs_uri(HDFS_PARQUET_URI, "olist_orders_dataset")
         )
-        .dropDuplicates(["date"])
-        .withColumn(
-            "date_key",
-            date_format(col("date"), "yyyyMMdd").cast("int")
-        )
-        .withColumn(
-            "year",
-            year(col("date"))
-        )
-        .withColumn(
-            "month",
-            month(col("date"))
-        )
-        .withColumn(
-            "day",
-            dayofmonth(col("date"))
-        )
-        .select(
-            "date_key",
-            "date",
-            "year",
-            "month",
-            "day"
-        )
-    )
 
-    rows = dim_date.count()
+        dim_date = (
+            orders
+            .select(
+                F.to_date(F.col("order_purchase_timestamp")).alias("date")
+            )
+            .withColumn(
+                "date_key",
+                F.date_format(F.col("date"), "yyyyMMdd").cast("int"),
+            )
+            .withColumn("year", F.year(F.col("date")))
+            .withColumn("month", F.month(F.col("date")))
+            .withColumn("day", F.dayofmonth(F.col("date")))
+            .dropDuplicates(["date_key"])
+            .select("date_key", "date", "year", "month", "day")
+        )
 
-    output = parquet_dir / "dim_date"
+        dim_date.write.mode("overwrite").parquet(
+            join_hdfs_uri(HDFS_WAREHOUSE_URI, "dim_date")
+        )
 
-    (
-        dim_date
-        .coalesce(1)
-        .write
-        .mode("overwrite")
-        .parquet(f"file://{output}")
-    )
-
-    print("=" * 60)
-    print("DIM_DATE CREATED")
-    print(f"Rows : {rows}")
-    print(f"Saved: {output}")
-    print("=" * 60)
-
-    spark.stop()
+        print("=" * 60)
+        print("DIM_DATE CREATED")
+        print("=" * 60)
+    finally:
+        spark.stop()
 
 
 if __name__ == "__main__":

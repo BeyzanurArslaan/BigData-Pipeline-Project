@@ -1,6 +1,5 @@
 from pathlib import Path
 import gc
-import traceback
 
 from processing.config import PARQUET_OUTPUT_DIR, RAW_DATA_DIR
 from processing.logger import get_logger
@@ -51,11 +50,10 @@ def main():
             del df
             gc.collect()
 
-        except Exception as e:
+        except Exception:
 
             logger.error("FAILED: %s", dataset_name)
-            logger.error(str(e))
-            traceback.print_exc()
+            logger.exception("Unhandled exception while processing %s", dataset_name)
             break
 
     spark.stop()
