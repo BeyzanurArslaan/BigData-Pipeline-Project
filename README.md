@@ -133,6 +133,64 @@ Advantages include:
 
 ---
 
+### ✅ Phase 2 — Building Data Pipeline
+
+From a business perspective, the purpose of the data pipeline is to transform raw e-commerce data into reliable, analytics-ready information.
+
+The Olist dataset contains the following source files:
+
+| File | Rows | Description |
+|---|---:|---|
+| olist_orders_dataset.csv | ~100k | Order lifecycle, timestamps, and status |
+| olist_order_items_dataset.csv | ~112k | Product, seller, price, and freight details |
+| olist_order_payments_dataset.csv | ~104k | Payment type, installments, and payment value |
+| olist_order_reviews_dataset.csv | ~100k | Review scores and comments |
+| olist_customers_dataset.csv | ~100k | Customer city, state, and ZIP code |
+| olist_sellers_dataset.csv | ~3k | Seller city, state, and ZIP code |
+| olist_products_dataset.csv | ~33k | Product category, dimensions, and weight |
+| olist_geolocation_dataset.csv | ~1M | ZIP code, latitude, and longitude |
+| product_category_name_translation.csv | ~71 | Portuguese-to-English category translation |
+
+Phase 2 focuses on:
+
+- Assessing data quality and duplicate entities
+- Designing the analytical output needed for business questions
+- Explaining the selected ETL approach and alternatives such as ELT and dbt
+- Defining architecture layers and responsibilities
+- Building a star schema with fact and dimension tables
+- Mapping business questions to warehouse entities
+
+Supported business questions include:
+
+| Business Question | Fact Table | Dimensions |
+|---|---|---|
+| Monthly revenue | fact_orders | dim_date |
+| Revenue by product category | fact_orders | dim_products |
+| Top-performing sellers | fact_orders | dim_sellers |
+| Sales by customer state | fact_orders | dim_customers |
+| Average delivery time by state | future extension | dim_customers, dim_date |
+| Payment method trends | fact_orders | primary_payment_type |
+| Average review score by category | fact_orders | dim_products |
+
+---
+
+### ✅ Phase 3 — Re-Construct the Data Pipeline
+
+Phase 3 will focus on two main objectives:
+
+1. Integrating Apache Airflow to automate, schedule, and monitor data pipeline jobs
+2. Implementing dbt to manage transformations and establish a Medallion Architecture
+
+Planned Phase 3 work includes:
+
+- Explaining Apache Airflow core components
+- Building an Airflow DAG for ingestion and transformation workflows
+- Defining task boundaries, operators, dependencies, and resource configurations
+- Migrating the star schema into a dbt project
+- Restructuring the pipeline into Bronze, Silver, and Gold layers
+- Documenting architectural decisions and implementation challenges
+---
+
 ## Step 3 — Distributed Storage
 
 Processed Parquet datasets are stored in Hadoop HDFS.
