@@ -1,8 +1,8 @@
 """Central configuration for the Olist pipeline.
 
-Local `Path` objects are used only for files mounted inside the container
-filesystem. HDFS locations stay as URI strings so they can be passed directly
-to Spark without converting them into filesystem paths.
+`RAW_DATA_DIR` remains a local `Path` because the CSV files are mounted inside
+the container filesystem. HDFS locations are kept as URI strings and are never
+represented as `Path` objects.
 """
 
 import os
@@ -13,23 +13,25 @@ from urllib.parse import urlsplit, urlunsplit
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
-# Local mounts used by Phase 1 and legacy scripts.
+# Local filesystem locations used inside the container.
 RAW_DATA_DIR = PROJECT_ROOT / "data" / "raw"
-PARQUET_OUTPUT_DIR = PROJECT_ROOT / "data" / "parquet"
 
 # Spark runtime settings.
 SPARK_APP_NAME = "Olist Big Data Analytics Pipeline"
 SPARK_MASTER = "spark://spark-master:7077"
 
-# HDFS base URI for Phase 2 warehouse outputs and shared Parquet inputs.
+# Base HDFS URI used for curated Parquet inputs and the analytical warehouse.
 HDFS_URI = os.getenv("HDFS_URI", "hdfs://namenode:9000")
 
 
 def join_hdfs_uri(base_uri, *parts):
-    """Join URI path segments without converting the location to a Path."""
+    """Join HDFS URI path segments without converting the URI to a Path."""
 
     parsed = urlsplit(base_uri)
-    joined_path = posixpath.join(parsed.path or "/", *[part.strip("/") for part in parts if part])
+    joined_path = posixpath.join(
+        parsed.path or "/",
+        *[part.strip("/") for part in parts if part],
+    )
     return urlunsplit(
         (
             parsed.scheme,
@@ -50,3 +52,6 @@ HDFS_WAREHOUSE_URI = os.getenv(
     "HDFS_WAREHOUSE_URI",
     join_hdfs_uri(HDFS_URI, "olist", "warehouse"),
 )
+
+# Backward-compatible alias for legacy code that still expects this name.
+HDFS_PARQUET_OUTPUT_URI = HDFS_PARQUET_URI

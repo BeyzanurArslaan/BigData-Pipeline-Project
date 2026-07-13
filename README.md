@@ -25,20 +25,20 @@ The project demonstrates a complete modern data engineering workflow, from raw C
 
 This project analyzes approximately **100,000 real Brazilian e-commerce orders** using distributed big data technologies.
 
-The project was completed in **two phases**.
+The project is completed in phases:
 
 ## Phase 1
 
 - Read raw CSV datasets using Apache Spark
 - Transform CSV files into Parquet format
 - Store processed datasets in Hadoop HDFS
-- Prepare queryable warehouse tables
+- Create Hive external tables
 - Connect Apache Superset
 - Build an interactive business dashboard
 
 ## Phase 2
 
-The second phase extends the pipeline by introducing a complete analytical warehouse design built around an order-item fact table and supporting dimensions.
+The second phase extends the pipeline with an analytical warehouse design built around an order-item fact table and supporting dimensions.
 
 Raw CSV files are read from the mounted local directory at `/app/data/raw`. Curated Parquet datasets are stored in HDFS under `hdfs://namenode:9000/olist/parquet`, and the Phase 2 warehouse writes its fact and dimension tables under `hdfs://namenode:9000/olist/warehouse`.
 
@@ -52,6 +52,15 @@ Additional work includes:
 - Business Questions Mapping
 - Business Analytics Dashboard
 - Documentation and technical report
+
+## Phase 3 — Planned
+
+Future work is planned around orchestration and transformation maturity:
+
+- Apache Airflow for scheduled orchestration
+- dbt for modular SQL transformations and testing
+- Incremental loading strategies
+- Additional automation and data quality checks
 
 ---
 
@@ -118,8 +127,6 @@ The original Olist dataset consists of multiple CSV files.
 
 Apache Spark loads every CSV dataset and automatically infers the schema.
 
----
-
 ## Step 2 — Data Transformation
 
 Spark transforms the datasets into Apache Parquet format.
@@ -131,19 +138,13 @@ Advantages include:
 - Better compression
 - Lower storage usage
 
----
-
 ## Step 3 — Distributed Storage
 
 Processed Parquet datasets are stored in Hadoop HDFS.
 
----
-
 ## Step 4 — Query Layer
 
 Hive external tables can be created on top of Parquet files, enabling SQL queries without duplicating data.
-
----
 
 ## Step 5 — Business Intelligence
 
@@ -178,10 +179,10 @@ Fact grain note: order-level payments are aggregated before joining to order ite
 
 ### Dimension Tables
 
-- dim_customers
-- dim_products
-- dim_sellers
-- dim_date
+- `dim_customers`
+- `dim_products`
+- `dim_sellers`
+- `dim_date`
 
 The warehouse separates business measures from descriptive dimensions, making analytical queries simpler and significantly faster.
 
@@ -208,7 +209,7 @@ The project follows a traditional **ETL (Extract, Transform, Load)** workflow.
 - Create Hive external tables
 - Query data through Apache Superset
 
-The project also discusses the differences between **ETL**, **ELT**, and **dbt** as architectural alternatives. `Airflow` is mentioned as a possible future scheduler rather than an implemented component.
+The project also discusses the differences between **ETL**, **ELT**, and **dbt** as architectural alternatives. `Airflow` is mentioned only as a possible future scheduler rather than an implemented component.
 
 ---
 
@@ -301,14 +302,6 @@ BigData-Pipeline-Project/
 │       ├── build_dim_sellers.py
 │       └── build_fact_orders.py
 │
-├── scripts/
-│   ├── download_dataset.py
-│   ├── setup_network.ps1
-│   └── setup_network.sh
-│
-├── visualization/
-│   └── register_tables.py
-│
 ├── reports/
 │   ├── Big_Data_Analytics_Pipeline_Report.pdf
 │   └── REPORT.md
@@ -320,6 +313,14 @@ BigData-Pipeline-Project/
 │   ├── dashboard_phase2_3.png
 │   ├── hdfs.png
 │   └── spark.png
+│
+├── scripts/
+│   ├── download_dataset.py
+│   ├── setup_network.ps1
+│   └── setup_network.sh
+│
+├── visualization/
+│   └── register_tables.py
 │
 ├── DESIGN.md
 ├── README.md
@@ -356,11 +357,11 @@ docker compose -f docker/docker-compose-superset.yml up -d
 
 Open the services:
 
-| Service | URL |
-|---------|-----|
-| HDFS NameNode | http://localhost:9870 |
-| Spark Master | http://localhost:8080 |
-| Apache Superset | http://localhost:8088 |
+| Service | URL | Credentials |
+|---------|-----|-------------|
+| HDFS NameNode | http://localhost:9870 | |
+| Spark Master | http://localhost:8080 | |
+| Apache Superset | http://localhost:8088 | admin / admin (local demo only; use environment variables and strong credentials for non-local deployments) |
 
 Default Superset credentials:
 
@@ -380,6 +381,7 @@ Successfully implemented:
 - Apache Spark ETL Pipeline
 - CSV → Parquet Transformation
 - Hadoop HDFS Distributed Storage
+- Apache Hive External Tables
 - Star Schema Data Warehouse
 - Fact & Dimension Modeling
 - ETL Documentation
