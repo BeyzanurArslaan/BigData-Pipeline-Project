@@ -21,4 +21,7 @@ Thumbs.db
 # Spark output
 *.crc
 _SUCCESS
-
+metastore_db/
+derby.log
+spark-warehouse/
+*.lck

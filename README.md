@@ -29,7 +29,7 @@ The Docker Compose files and scripts provided in this repo are **starter code on
   · Writes Parquet
         |
         v
-[HDFS or MinIO]
+[HDFS]
         |
         v
 [Apache Superset — Simple Charts]
@@ -45,16 +45,46 @@ The Docker Compose files and scripts provided in this repo are **starter code on
 > **Current task**
 
 - Download the Olist dataset (9 CSV tables).
-- Import all CSVs into **HDFS or MinIO** in **Parquet format** using Apache Spark.
+- Import all CSVs into **HDFS** in **Parquet format** using Apache Spark.
 - Connect Apache Superset to the stored data and create a few simple charts/diagrams.
 
 No advanced transformations are required for this phase.
+
+The current Phase 1 implementation reads raw CSVs from the local mount at `/app/data/raw` and writes processed Parquet files to `hdfs://namenode:9000/olist/parquet/<dataset_name>`.
 
 ---
 
 ### 🔜 Phase 2 — Coming Soon
 
 Details will be announced.
+
+---
+
+## Repository Layout
+
+```text
+.
+├── README.md
+├── docker/
+│   ├── Dockerfile.dev
+│   ├── Dockerfile.superset
+│   ├── docker-compose-dev.yml
+│   ├── docker-compose-hdfs.yml
+│   ├── docker-compose-minio.yml
+│   ├── docker-compose-spark.yml
+│   └── docker-compose-superset.yml
+├── processing/
+│   ├── analysis.py
+│   └── config.py
+├── reports/
+│   └── REPORT.md
+├── scripts/
+│   ├── download_dataset.py
+│   ├── setup_network.ps1
+│   └── setup_network.sh
+└── visualization/
+    └── register_tables.py
+```
 
 ---
 
@@ -84,7 +114,7 @@ docker compose -f docker/docker-compose-superset.yml up -d
 |-----------------|---------------------------|---------------|
 | HDFS NameNode   | http://localhost:9870     |               |
 | Spark Master    | http://localhost:8080     |               |
-| Superset        | http://localhost:8088     | admin / admin |
+| Superset        | http://localhost:8088     | admin / admin (local demo only; use environment variables and strong credentials for non-local deployments) |
 
 **3. Stop everything**
 
