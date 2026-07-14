@@ -1,0 +1,36 @@
+name: olist_warehouse
+version: 1.0.0
+config-version: 2
+
+profile: olist_warehouse
+
+model-paths:
+  - models
+
+macro-paths:
+  - macros
+
+test-paths:
+  - tests
+
+seed-paths:
+  - seeds
+
+snapshot-paths:
+  - snapshots
+
+target-path: target
+clean-targets:
+  - target
+  - dbt_packages
+
+models:
+  olist_warehouse:
+    +materialized: view
+    bronze:
+      +materialized: view
+    silver:
+      +materialized: view
+    gold:
+      +materialized: table
+

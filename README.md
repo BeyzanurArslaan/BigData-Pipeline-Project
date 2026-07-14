@@ -15,9 +15,9 @@ The project demonstrates a complete modern data engineering workflow, from raw C
 
 # 📊 Dashboard
 
-> Interactive dashboard built with Apache Superset.
+The Apache Superset dashboard is built from the Phase 2 warehouse and tracks the KPI cards and charts described later in this README.
 
-![Dashboard](screenshots/dashboard.png)
+Screenshot assets are not tracked in this repository.
 
 ---
 
@@ -62,7 +62,7 @@ Implemented tasks include:
 - Data quality assessment
 - ETL architecture design
 - ETL vs ELT comparison
-- Discussion of dbt as an architectural alternative
+- dbt foundation work for the Phase 3 transition
 - Star schema design
 - Fact and dimension modeling
 - Business-question mapping
@@ -77,9 +77,11 @@ hdfs://namenode:9000/olist/warehouse
 
 The analytical model is built around an order-item fact table.
 
-## Phase 3 — Planned Reconstruction
+## Phase 3 — Foundation
 
-Phase 3 is planned as a future extension.
+Phase 3 foundation work is now being implemented.
+
+Phase 3 uses a Medallion Architecture and begins the migration toward Airflow-driven orchestration and dbt-managed transformations. The existing Phase 2 warehouse scripts remain available during the transition so the current warehouse can continue to run unchanged while Phase 3 is introduced.
 
 Planned work includes:
 
@@ -90,7 +92,49 @@ Planned work includes:
 - Automated data quality checks
 - Improved observability and pipeline monitoring
 
-Airflow and dbt are not currently implemented.
+Airflow and dbt are being implemented in Phase 3, starting with repository scaffolding and documentation.
+
+## Phase 3 — Airflow Local Infrastructure
+
+Phase 3 now includes a production-like local Airflow stack for orchestration, scheduling, and monitoring.
+
+Startup command:
+
+```bash
+docker compose -f docker/docker-compose-airflow.yml up -d --build
+```
+
+Airflow UI:
+
+```text
+http://localhost:8085
+```
+
+Local-demo credentials are created by `airflow-init` from environment variables.
+
+The example values in `.env.airflow.example` are for local demonstrations only:
+
+- `AIRFLOW_ADMIN_USERNAME=admin`
+- `AIRFLOW_ADMIN_PASSWORD=admin`
+
+Use environment variables and strong, unique credentials for non-local deployments.
+
+Airflow containers connect to the existing services on `bigdata-net`:
+
+- Spark master: `spark://spark-master:7077`
+- Spark ThriftServer: `spark-thriftserver:10000`
+- HDFS NameNode: `hdfs://namenode:9000`
+- Superset: `http://superset:8088`
+
+Service roles:
+
+| Service | Role |
+|---|---|
+| `airflow-postgres` | PostgreSQL metadata database for Airflow state |
+| `airflow-init` | Migrates the metadata database and creates the local admin user |
+| `airflow-webserver` | Hosts the Airflow UI and API |
+| `airflow-scheduler` | Queues and schedules DAG tasks |
+| `airflow-triggerer` | Handles deferred and async task triggers |
 
 ---
 
@@ -349,7 +393,7 @@ ETL was selected because Spark performs distributed transformations before data 
 
 In an ELT architecture, raw data would first be loaded into the warehouse and transformed later using SQL.
 
-dbt is discussed as a possible future transformation framework because it supports:
+dbt is being implemented in Phase 3 as the transformation framework because it supports:
 
 - Modular SQL models
 - Testing
@@ -357,7 +401,7 @@ dbt is discussed as a possible future transformation framework because it suppor
 - Lineage
 - Version-controlled transformations
 
-dbt is not currently implemented in this repository.
+dbt is part of the active Phase 3 foundation work in this repository.
 
 ---
 
@@ -408,82 +452,60 @@ These visualizations provide a concise overview of marketplace performance, paym
 
 ---
 
-# 📸 Screenshots
-
-## Apache Spark
-
-![Spark](screenshots/spark.png)
-
-## Hadoop HDFS
-
-![HDFS](screenshots/hdfs.png)
-
-## Apache Superset Dashboard
-
-![Dashboard](screenshots/dashboard.png)
-
-## Phase 2 Dashboard
-
-![Phase 2 Dashboard](screenshots/dashboard_phase2_1.png)
-
-![Phase 2 Dashboard](screenshots/dashboard_phase2_2.png)
-
-![Phase 2 Dashboard](screenshots/dashboard_phase2_3.png)
-
----
-
 # 📁 Project Structure
 
 ```text
 BigData-Pipeline-Project/
-│
+├── .env.airflow.example
+├── .gitignore
+├── airflow/
+│   ├── config/
+│   │   └── .gitkeep
+│   ├── dags/
+│   │   └── .gitkeep
+│   ├── logs/
+│   │   └── .gitkeep
+│   └── plugins/
+│       └── .gitkeep
+├── dbt/
+│   ├── dbt_project.yml
+│   ├── macros/
+│   │   └── .gitkeep
+│   ├── models/
+│   │   ├── bronze/
+│   │   │   └── .gitkeep
+│   │   ├── gold/
+│   │   │   └── .gitkeep
+│   │   └── silver/
+│   │       └── .gitkeep
+│   ├── profiles.yml.example
+│   ├── seeds/
+│   │   └── .gitkeep
+│   ├── snapshots/
+│   │   └── .gitkeep
+│   └── tests/
+│       └── .gitkeep
 ├── docker/
+│   ├── Dockerfile.airflow
 │   ├── Dockerfile.dev
 │   ├── Dockerfile.superset
+│   ├── docker-compose-airflow.yml
 │   ├── docker-compose-dev.yml
 │   ├── docker-compose-hdfs.yml
 │   ├── docker-compose-minio.yml
 │   ├── docker-compose-spark.yml
 │   └── docker-compose-superset.yml
-│
 ├── processing/
-│   ├── __init__.py
 │   ├── analysis.py
 │   ├── config.py
 │   ├── logger.py
 │   ├── spark_session.py
-│   ├── quality/
-│   │   └── __init__.py
-│   ├── utils/
-│   │   └── __init__.py
 │   └── warehouse/
-│       ├── __init__.py
 │       ├── build_dim_customers.py
 │       ├── build_dim_date.py
 │       ├── build_dim_products.py
 │       ├── build_dim_sellers.py
 │       └── build_fact_orders.py
-│
-├── reports/
-│   ├── Big_Data_Analytics_Pipeline_Report.pdf
-│   └── REPORT.md
-│
-├── screenshots/
-│   ├── dashboard.png
-│   ├── dashboard_phase2_1.png
-│   ├── dashboard_phase2_2.png
-│   ├── dashboard_phase2_3.png
-│   ├── hdfs.png
-│   └── spark.png
-│
-├── scripts/
-│   ├── download_dataset.py
-│   ├── setup_network.ps1
-│   └── setup_network.sh
-│
-├── visualization/
-│   └── register_tables.py
-│
 ├── DESIGN.md
 ├── README.md
 └── .gitignore
@@ -518,6 +540,12 @@ Start Apache Superset:
 docker compose -f docker/docker-compose-superset.yml up -d
 ```
 
+Start Apache Airflow:
+
+```bash
+docker compose -f docker/docker-compose-airflow.yml up -d --build
+```
+
 Check running services:
 
 ```bash
@@ -531,6 +559,7 @@ Open the interfaces:
 | HDFS NameNode | http://localhost:9870 |
 | Spark Master | http://localhost:8080 |
 | Apache Superset | http://localhost:8088 |
+| Apache Airflow | http://localhost:8085 |
 
 ## Superset Local Demo Credentials
 
@@ -542,6 +571,17 @@ Password: admin
 These credentials are for local demonstrations only.
 
 Use environment variables and strong, unique credentials for non-local deployments.
+
+## Airflow Local Demo Credentials
+
+The Airflow admin user is created by `airflow-init` from environment variables.
+
+The example credentials in `.env.airflow.example` are for local demos only:
+
+- Username: `admin`
+- Password: `admin`
+
+Use strong credentials for any non-local deployment.
 
 ---
 
@@ -617,10 +657,10 @@ Successfully implemented:
 
 The repository includes:
 
-- Final project report
 - `README.md`
 - `DESIGN.md`
-- Apache Superset dashboard screenshots
+- Airflow repository scaffolding
+- dbt repository scaffolding
 - Spark ingestion scripts
 - Spark warehouse scripts
 

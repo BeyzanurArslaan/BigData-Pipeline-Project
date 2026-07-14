@@ -1,0 +1,14 @@
+olist_warehouse:
+  target: dev
+  outputs:
+    dev:
+      type: postgres
+      host: ${DBT_POSTGRES_HOST}
+      user: ${DBT_POSTGRES_USER}
+      password: ${DBT_POSTGRES_PASSWORD}
+      port: ${DBT_POSTGRES_PORT}
+      dbname: ${DBT_POSTGRES_DB}
+      schema: ${DBT_POSTGRES_SCHEMA}
+      threads: 4
+      keepalives_idle: 0
+

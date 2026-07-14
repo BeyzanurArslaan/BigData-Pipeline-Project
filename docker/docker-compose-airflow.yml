@@ -1,0 +1,139 @@
+x-airflow-common-env: &airflow-common-env
+  AIRFLOW__CORE__EXECUTOR: ${AIRFLOW__CORE__EXECUTOR:-LocalExecutor}
+  AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: ${AIRFLOW__DATABASE__SQL_ALCHEMY_CONN:-postgresql+psycopg2://airflow:airflow@airflow-postgres:5432/airflow}
+  AIRFLOW__CORE__LOAD_EXAMPLES: ${AIRFLOW__CORE__LOAD_EXAMPLES:-false}
+  AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: ${AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION:-true}
+  AIRFLOW__API__AUTH_BACKENDS: ${AIRFLOW__API__AUTH_BACKENDS:-airflow.api.auth.backend.basic_auth}
+  AIRFLOW_UID: ${AIRFLOW_UID:-50000}
+  AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW__WEBSERVER__SECRET_KEY:-change-me-for-local-demo}
+  AIRFLOW__CORE__DEFAULT_TIMEZONE: UTC
+  AIRFLOW__LOGGING__BASE_LOG_FOLDER: /opt/airflow/logs
+  AIRFLOW_SPARK_MASTER_URL: ${AIRFLOW_SPARK_MASTER_URL:-spark://spark-master:7077}
+  AIRFLOW_SPARK_THRIFTSERVER_HOST: ${AIRFLOW_SPARK_THRIFTSERVER_HOST:-spark-thriftserver}
+  AIRFLOW_SPARK_THRIFTSERVER_PORT: ${AIRFLOW_SPARK_THRIFTSERVER_PORT:-10000}
+  AIRFLOW_HDFS_URI: ${AIRFLOW_HDFS_URI:-hdfs://namenode:9000}
+  AIRFLOW_SUPERSET_URL: ${AIRFLOW_SUPERSET_URL:-http://superset:8088}
+
+x-airflow-common: &airflow-common
+  build:
+    context: ..
+    dockerfile: docker/Dockerfile.airflow
+  image: olist-airflow:2.10.4
+  environment: *airflow-common-env
+  volumes:
+    - ../airflow/dags:/opt/airflow/dags
+    - ../airflow/logs:/opt/airflow/logs
+    - ../airflow/plugins:/opt/airflow/plugins
+    - ../airflow/config:/opt/airflow/config
+    - ../dbt:/opt/airflow/dbt
+    - ..:/app
+  networks:
+    - bigdata-net
+
+services:
+  airflow-postgres:
+    image: postgres:16-alpine
+    container_name: airflow-postgres
+    hostname: airflow-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${AIRFLOW_POSTGRES_DB:-airflow}
+      POSTGRES_USER: ${AIRFLOW_POSTGRES_USER:-airflow}
+      POSTGRES_PASSWORD: ${AIRFLOW_POSTGRES_PASSWORD:-airflow}
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - airflow_postgres_data:/var/lib/postgresql/data
+    networks:
+      - bigdata-net
+
+  airflow-init:
+    <<: *airflow-common
+    container_name: airflow-init
+    hostname: airflow-init
+    restart: "no"
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        set -e
+        airflow db migrate
+        airflow users create \
+          --username "${AIRFLOW_ADMIN_USERNAME:-admin}" \
+          --password "${AIRFLOW_ADMIN_PASSWORD:-admin}" \
+          --firstname "${AIRFLOW_ADMIN_FIRSTNAME:-Admin}" \
+          --lastname "${AIRFLOW_ADMIN_LASTNAME:-User}" \
+          --role Admin \
+          --email "${AIRFLOW_ADMIN_EMAIL:-admin@local.test}" || true
+    depends_on:
+      airflow-postgres:
+        condition: service_healthy
+
+  airflow-webserver:
+    <<: *airflow-common
+    container_name: airflow-webserver
+    hostname: airflow-webserver
+    restart: unless-stopped
+    command: webserver
+    ports:
+      - "8085:8080"
+    depends_on:
+      airflow-postgres:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail http://localhost:8080/health >/dev/null"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  airflow-scheduler:
+    <<: *airflow-common
+    container_name: airflow-scheduler
+    hostname: airflow-scheduler
+    restart: unless-stopped
+    command: scheduler
+    depends_on:
+      airflow-postgres:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "airflow jobs check --job-type SchedulerJob --hostname $${HOSTNAME} >/dev/null 2>&1",
+        ]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  airflow-triggerer:
+    <<: *airflow-common
+    container_name: airflow-triggerer
+    hostname: airflow-triggerer
+    restart: unless-stopped
+    command: triggerer
+    depends_on:
+      airflow-postgres:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+
+volumes:
+  airflow_postgres_data:
+
+networks:
+  bigdata-net:
+    external: true
+    name: bigdata-net

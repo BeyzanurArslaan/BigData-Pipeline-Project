@@ -18,6 +18,9 @@ venv/
 # Logs
 # ==========================
 logs/
+airflow/logs/*
+!airflow/logs/.gitkeep
+airflow/**/__pycache__/
 
 # ==========================
 # macOS / Windows
@@ -41,3 +44,13 @@ metastore_db/
 derby.log
 spark-warehouse/
 *.lck
+
+# ==========================
+# dbt / local env
+# ==========================
+dbt/target/
+dbt/logs/
+dbt_packages/
+profiles.yml
+.env
+.env.airflow

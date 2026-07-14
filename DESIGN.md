@@ -6,10 +6,11 @@ This project implements an end-to-end Big Data Analytics Pipeline using Apache S
 
 The objective is to transform raw e-commerce data into an analytical data warehouse and provide business insights through interactive dashboards.
 
-The project was completed in two phases:
+The first two phases are complete, and Phase 3 is now being implemented:
 
 - **Phase 1:** Data ingestion, transformation, storage, and visualization.
 - **Phase 2:** Data warehouse design, ETL documentation, star schema modeling, and business analytics.
+- **Phase 3:** Airflow orchestration, dbt transformation scaffolding, and a Medallion Architecture migration.
 
 ---
 
@@ -129,7 +130,25 @@ This project uses the ETL approach because all transformations are completed bef
 
 Compared to ELT, ETL reduces dashboard query complexity and improves analytical performance.
 
-The project documentation also discusses modern ELT architectures and dbt as alternative transformation approaches. Apache Airflow is treated as a future orchestration option rather than an implemented component.
+The project documentation also discusses modern ELT architectures and dbt as part of the active Phase 3 transformation plan. Apache Airflow is now being implemented as the orchestration layer for Phase 3.
+
+## Phase 3 Foundation
+
+Phase 3 is now being implemented around a Medallion Architecture. Airflow and dbt are part of the active Phase 3 buildout, while the existing Phase 2 warehouse scripts remain available during the migration so the current warehouse can keep running unchanged.
+
+---
+
+# Airflow Concepts
+
+- **Webserver:** The Airflow webserver serves the UI and API for browsing DAGs, monitoring runs, and managing the orchestration environment.
+- **Scheduler:** The scheduler parses DAG files and queues task instances when their schedules and dependencies are ready.
+- **Metadata Database:** The metadata database stores DAG definitions, task state, run history, connections, variables, and other Airflow metadata.
+- **Executor:** The executor decides how task instances are executed; `LocalExecutor` runs tasks in parallel on the local Airflow host.
+- **Triggerer:** The triggerer manages deferred tasks and asynchronous triggers without holding worker slots open.
+- **DAG:** A DAG is the directed acyclic graph that defines workflow order and dependencies.
+- **Task:** A task is one unit of work inside a DAG, such as a Python callable or an operator-based action.
+- **Operator:** An operator is a reusable template that defines how a task performs its work.
+- **XCom:** XCom is Airflow's lightweight cross-communication mechanism for passing small values between tasks.
 
 ---
 
@@ -245,7 +264,6 @@ These decisions improve scalability, maintainability, and query performance.
 
 Possible future enhancements include:
 
-- Automated ETL scheduling using Apache Airflow
 - Incremental data loading
 - Additional dimension tables
 - Machine Learning integration
