@@ -41,11 +41,8 @@ Implemented tasks include:
 - Connecting Apache Superset to Hive
 - Building an interactive business dashboard
 
-Raw CSV files are mounted locally under:
-
-```text
-/app/data/raw
-```
+Raw CSV files live in `data/raw` in the repository and are mounted into the
+container at runtime.
 
 Curated Phase 1 Parquet datasets are stored in HDFS under:
 
@@ -94,6 +91,18 @@ Planned work includes:
 
 Airflow and dbt are being implemented in Phase 3, starting with repository scaffolding and documentation.
 
+Phase 3.4 implemented the dbt Silver layer, and Phase 3.5 is now rebuilding the Phase 2 star schema in dbt Gold models.
+
+The existing Spark warehouse builders remain available for comparison during the migration.
+
+Medallion boundaries:
+
+- Bronze: source-aligned and minimally processed data
+- Silver: cleaned, typed, and deduplicated business-ready entities
+- Gold: facts, dimensions, KPIs, and reporting marts
+
+The Gold layer will eventually replace the existing Spark-built star schema, while the current Phase 2 warehouse scripts remain available during the migration.
+
 ## Phase 3 — Airflow Local Infrastructure
 
 Phase 3 now includes a production-like local Airflow stack for orchestration, scheduling, and monitoring.
@@ -119,6 +128,20 @@ The example values in `.env.airflow.example` are for local demonstrations only:
 
 Use environment variables and strong, unique credentials for non-local deployments.
 
+Phase 3.7 connects Airflow to Spark ingestion, dbt `deps`/`debug`/`run`/`test`, readiness checks, and reconciliation artifacts written to `reports/phase3/runs/`.
+
+The `.env.airflow.example` file shows the required environment-variable placeholders for the dbt target and for either a Superset bearer token or a username/password pair.
+
+## Phase 3.8 Documentation Checklist
+
+- Airflow infrastructure with `LocalExecutor`, PostgreSQL metadata storage, and the existing big-data services on `bigdata-net`
+- Airflow DAG orchestration for Spark ingestion, dbt `deps`, `debug`, `run`, `test`, readiness checks, reconciliation, and Superset refresh
+- dbt project scaffolding for Bronze, Silver, and Gold layers with sources, refs, models, tests, macros, docs, and lineage
+- Bronze Parquet ingestion, Silver cleaning and typing, and Gold star-schema rebuilding from Silver only
+- Order-item fact grain with proportional payment allocation and comparison against the Phase 2 Spark-built warehouse
+- Runtime-safe reruns, idempotent metadata refresh, and reconciliation artifacts under `reports/phase3/runs/`
+- Documentation for architecture, challenges, and recovery behavior without removing the Phase 1 or Phase 2 sections
+
 Airflow containers connect to the existing services on `bigdata-net`:
 
 - Spark master: `spark://spark-master:7077`
@@ -135,6 +158,42 @@ Service roles:
 | `airflow-webserver` | Hosts the Airflow UI and API |
 | `airflow-scheduler` | Queues and schedules DAG tasks |
 | `airflow-triggerer` | Handles deferred and async task triggers |
+
+## Phase 3.7 Operations
+
+Run the medallion pipeline from Airflow:
+
+```bash
+docker compose -f docker/docker-compose-airflow.yml exec airflow-webserver \
+  airflow dags trigger olist_medallion_pipeline
+```
+
+Run a one-off DAG test with a specific execution date:
+
+```bash
+docker compose -f docker/docker-compose-airflow.yml exec airflow-webserver \
+  airflow dags test olist_medallion_pipeline 2024-01-01
+```
+
+Check dbt connectivity from the Airflow container:
+
+```bash
+docker compose -f docker/docker-compose-airflow.yml exec airflow-webserver \
+  bash -lc 'cd /opt/airflow/dbt && dbt debug --project-dir /opt/airflow/dbt --profiles-dir /opt/airflow/dbt --target "${AIRFLOW_DBT_TARGET:-local}"'
+```
+
+Refresh dbt packages in the same environment:
+
+```bash
+docker compose -f docker/docker-compose-airflow.yml exec airflow-webserver \
+  bash -lc 'cd /opt/airflow/dbt && dbt deps --project-dir /opt/airflow/dbt --profiles-dir /opt/airflow/dbt'
+```
+
+Inspect reconciliation artifacts:
+
+```bash
+ls -1 reports/phase3/runs/
+```
 
 ---
 
@@ -462,7 +521,8 @@ BigData-Pipeline-Project/
 │   ├── config/
 │   │   └── .gitkeep
 │   ├── dags/
-│   │   └── .gitkeep
+│   │   ├── .gitkeep
+│   │   └── olist_medallion_pipeline.py
 │   ├── logs/
 │   │   └── .gitkeep
 │   └── plugins/
@@ -470,14 +530,37 @@ BigData-Pipeline-Project/
 ├── dbt/
 │   ├── dbt_project.yml
 │   ├── macros/
-│   │   └── .gitkeep
+│   │   └── generic_tests.sql
 │   ├── models/
 │   │   ├── bronze/
-│   │   │   └── .gitkeep
+│   │   │   ├── README.md
+│   │   │   ├── sources.yml
+│   │   │   ├── stg_category_translation.sql
+│   │   │   ├── stg_customers.sql
+│   │   │   ├── stg_order_items.sql
+│   │   │   ├── stg_order_payments.sql
+│   │   │   ├── stg_order_reviews.sql
+│   │   │   ├── stg_orders.sql
+│   │   │   ├── stg_products.sql
+│   │   │   └── stg_sellers.sql
 │   │   ├── gold/
-│   │   │   └── .gitkeep
+│   │   │   ├── README.md
+│   │   │   ├── dim_customers.sql
+│   │   │   ├── dim_date.sql
+│   │   │   ├── dim_products.sql
+│   │   │   ├── dim_sellers.sql
+│   │   │   ├── fact_orders.sql
+│   │   │   └── schema.yml
 │   │   └── silver/
-│   │       └── .gitkeep
+│   │       ├── README.md
+│   │       ├── customers.sql
+│   │       ├── order_items.sql
+│   │       ├── order_payments.sql
+│   │       ├── order_reviews.sql
+│   │       ├── orders.sql
+│   │       ├── products.sql
+│   │       ├── schema.yml
+│   │       └── sellers.sql
 │   ├── profiles.yml.example
 │   ├── seeds/
 │   │   └── .gitkeep
@@ -506,6 +589,10 @@ BigData-Pipeline-Project/
 │       ├── build_dim_products.py
 │       ├── build_dim_sellers.py
 │       └── build_fact_orders.py
+├── reports/
+│   └── phase3/
+│       └── runs/
+│           └── .gitkeep
 ├── DESIGN.md
 ├── README.md
 └── .gitignore

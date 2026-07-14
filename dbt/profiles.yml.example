@@ -1,14 +1,13 @@
-olist_warehouse:
-  target: dev
+olist_analytics:
+  target: "{{ env_var('AIRFLOW_DBT_TARGET', 'local') }}"
   outputs:
-    dev:
-      type: postgres
-      host: ${DBT_POSTGRES_HOST}
-      user: ${DBT_POSTGRES_USER}
-      password: ${DBT_POSTGRES_PASSWORD}
-      port: ${DBT_POSTGRES_PORT}
-      dbname: ${DBT_POSTGRES_DB}
-      schema: ${DBT_POSTGRES_SCHEMA}
-      threads: 4
-      keepalives_idle: 0
-
+    local:
+      type: spark
+      method: thrift
+      host: "{{ env_var('AIRFLOW_SPARK_THRIFTSERVER_HOST', 'spark-thriftserver') }}"
+      port: "{{ env_var('AIRFLOW_SPARK_THRIFTSERVER_PORT', '10000') | as_number }}"
+      schema: "{{ env_var('AIRFLOW_DBT_SCHEMA', 'olist_analytics') }}"
+      database: "{{ env_var('AIRFLOW_DBT_DATABASE', 'default') }}"
+      user: "{{ env_var('AIRFLOW_DBT_USER', 'airflow') }}"
+      auth: NOSASL
+      threads: "{{ env_var('AIRFLOW_DBT_THREADS', '4') | as_number }}"

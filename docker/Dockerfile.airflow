@@ -6,6 +6,7 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         build-essential \
         curl \
+        default-jre-headless \
         libffi-dev \
         libkrb5-dev \
         libsasl2-dev \
@@ -18,7 +19,8 @@ RUN pip install --no-cache-dir \
     apache-airflow-providers-apache-spark \
     apache-airflow-providers-http \
     dbt-core \
-    dbt-postgres \
+    dbt-spark \
+    pyspark==3.3.0 \
     pyhive \
     requests \
     thrift \

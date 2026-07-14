@@ -51,6 +51,8 @@ spark-warehouse/
 dbt/target/
 dbt/logs/
 dbt_packages/
+reports/phase3/runs/*
+!reports/phase3/runs/.gitkeep
 profiles.yml
 .env
 .env.airflow

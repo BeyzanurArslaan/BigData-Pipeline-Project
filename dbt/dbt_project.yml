@@ -1,8 +1,8 @@
-name: olist_warehouse
+name: olist_analytics
 version: 1.0.0
 config-version: 2
 
-profile: olist_warehouse
+profile: olist_analytics
 
 model-paths:
   - models
@@ -20,17 +20,23 @@ snapshot-paths:
   - snapshots
 
 target-path: target
+
 clean-targets:
   - target
   - dbt_packages
+  - logs
 
 models:
-  olist_warehouse:
-    +materialized: view
+  olist_analytics:
+    +persist_docs:
+      relation: true
+      columns: true
     bronze:
       +materialized: view
+      +schema: bronze
     silver:
-      +materialized: view
+      +materialized: table
+      +schema: silver
     gold:
       +materialized: table
-
+      +schema: gold

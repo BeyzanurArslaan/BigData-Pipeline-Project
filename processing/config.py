@@ -18,7 +18,10 @@ RAW_DATA_DIR = PROJECT_ROOT / "data" / "raw"
 
 # Spark runtime settings.
 SPARK_APP_NAME = "Olist Big Data Analytics Pipeline"
-SPARK_MASTER = "spark://spark-master:7077"
+SPARK_MASTER = os.getenv(
+    "SPARK_MASTER_URL",
+    os.getenv("AIRFLOW_SPARK_MASTER_URL", "spark://spark-master:7077"),
+)
 
 # Base HDFS URI used for curated Parquet inputs and the analytical warehouse.
 HDFS_URI = os.getenv("HDFS_URI", "hdfs://namenode:9000")

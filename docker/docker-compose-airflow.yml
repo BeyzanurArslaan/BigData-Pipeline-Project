@@ -12,7 +12,20 @@ x-airflow-common-env: &airflow-common-env
   AIRFLOW_SPARK_THRIFTSERVER_HOST: ${AIRFLOW_SPARK_THRIFTSERVER_HOST:-spark-thriftserver}
   AIRFLOW_SPARK_THRIFTSERVER_PORT: ${AIRFLOW_SPARK_THRIFTSERVER_PORT:-10000}
   AIRFLOW_HDFS_URI: ${AIRFLOW_HDFS_URI:-hdfs://namenode:9000}
+  AIRFLOW_DBT_TARGET: ${AIRFLOW_DBT_TARGET:-local}
+  AIRFLOW_DBT_DATABASE: ${AIRFLOW_DBT_DATABASE:-default}
+  AIRFLOW_DBT_SCHEMA: ${AIRFLOW_DBT_SCHEMA:-olist_analytics}
+  AIRFLOW_DBT_BRONZE_SCHEMA: ${AIRFLOW_DBT_BRONZE_SCHEMA:-olist_bronze}
+  AIRFLOW_DBT_SILVER_SCHEMA: ${AIRFLOW_DBT_SILVER_SCHEMA:-silver}
+  AIRFLOW_DBT_GOLD_SCHEMA: ${AIRFLOW_DBT_GOLD_SCHEMA:-gold}
+  AIRFLOW_DBT_THREADS: ${AIRFLOW_DBT_THREADS:-4}
+  AIRFLOW_DBT_USER: ${AIRFLOW_DBT_USER:-airflow}
   AIRFLOW_SUPERSET_URL: ${AIRFLOW_SUPERSET_URL:-http://superset:8088}
+  AIRFLOW_SUPERSET_HEALTH_ENDPOINT: ${AIRFLOW_SUPERSET_HEALTH_ENDPOINT:-/health}
+  AIRFLOW_SUPERSET_REFRESH_ENDPOINT: ${AIRFLOW_SUPERSET_REFRESH_ENDPOINT:-/health}
+  AIRFLOW_SUPERSET_USERNAME: ${AIRFLOW_SUPERSET_USERNAME:-}
+  AIRFLOW_SUPERSET_PASSWORD: ${AIRFLOW_SUPERSET_PASSWORD:-}
+  AIRFLOW_SUPERSET_ACCESS_TOKEN: ${AIRFLOW_SUPERSET_ACCESS_TOKEN:-}
 
 x-airflow-common: &airflow-common
   build:
@@ -26,6 +39,7 @@ x-airflow-common: &airflow-common
     - ../airflow/plugins:/opt/airflow/plugins
     - ../airflow/config:/opt/airflow/config
     - ../dbt:/opt/airflow/dbt
+    - ../dbt/profiles.yml.example:/opt/airflow/dbt/profiles.yml:ro
     - ..:/app
   networks:
     - bigdata-net

@@ -1,0 +1,35 @@
+version: 2
+
+sources:
+  - name: olist_bronze
+    description: >
+      Source-aligned Bronze tables exposed through Spark ThriftServer or Hive
+      on top of the Spark-produced Parquet files stored under
+      hdfs://namenode:9000/olist/parquet.
+    database: "{{ env_var('AIRFLOW_DBT_DATABASE', 'default') }}"
+    schema: "{{ env_var('AIRFLOW_DBT_BRONZE_SCHEMA', 'olist_bronze') }}"
+    tables:
+      - name: orders
+        identifier: olist_orders_dataset
+        description: Raw Olist orders records.
+      - name: order_items
+        identifier: olist_order_items_dataset
+        description: Raw Olist order items records.
+      - name: order_payments
+        identifier: olist_order_payments_dataset
+        description: Raw Olist order payments records.
+      - name: order_reviews
+        identifier: olist_order_reviews_dataset
+        description: Raw Olist order reviews records.
+      - name: customers
+        identifier: olist_customers_dataset
+        description: Raw Olist customers records.
+      - name: sellers
+        identifier: olist_sellers_dataset
+        description: Raw Olist sellers records.
+      - name: products
+        identifier: olist_products_dataset
+        description: Raw Olist products records.
+      - name: category_translation
+        identifier: product_category_name_translation
+        description: Raw product category translation records.

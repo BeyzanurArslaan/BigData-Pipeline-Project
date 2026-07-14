@@ -1,0 +1,179 @@
+version: 2
+
+models:
+  - name: fact_orders
+    description: >
+      Phase 3 Gold order-item fact table built only from Silver models. The grain
+      is one row per `order_id` + `order_item_id`, and order-level payments are
+      allocated proportionally across items to prevent revenue duplication.
+    tests:
+      - unique_combination_of_columns:
+          column_names: ['order_id', 'order_item_id']
+      - row_count_matches_relation:
+          compare_model: ref('order_items')
+      - approximately_equal_sum:
+          compare_model: ref('order_payments')
+          compare_column: order_payment_value
+          compare_key: order_id
+          tolerance: 0.01
+    columns:
+      - name: order_id
+        description: Order business key.
+        tests:
+          - not_null
+      - name: order_item_id
+        description: Item sequence number within the order.
+        tests:
+          - not_null
+      - name: customer_id
+        description: Customer foreign key.
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_customers')
+              field: customer_id
+      - name: seller_id
+        description: Seller foreign key.
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_sellers')
+              field: seller_id
+      - name: product_id
+        description: Product foreign key.
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_products')
+              field: product_id
+      - name: date_key
+        description: Date foreign key derived from the order purchase timestamp.
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_date')
+              field: date_key
+      - name: order_status
+        description: Order lifecycle status.
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['approved', 'canceled', 'created', 'delivered', 'invoiced', 'processing', 'shipped', 'unavailable']
+      - name: price
+        description: Item price.
+        tests:
+          - not_null
+      - name: freight_value
+        description: Item freight value.
+        tests:
+          - not_null
+      - name: item_gross_value
+        description: Item gross value calculated as price plus freight.
+        tests:
+          - non_negative_value
+      - name: order_items_gross_total
+        description: Total gross value for all items in the order.
+        tests:
+          - non_negative_value
+      - name: order_payment_value
+        description: Order-level total payment value.
+        tests:
+          - non_negative_value
+      - name: allocated_payment_value
+        description: Proportionally allocated order payment value for the item.
+        tests:
+          - non_negative_value
+      - name: primary_payment_type
+        description: Primary payment method chosen from the lowest payment sequential value.
+        tests:
+          - not_null
+      - name: primary_payment_installments
+        description: Installment count for the primary payment method.
+        tests:
+          - not_null
+      - name: review_score
+        description: Review score attached to the order.
+
+  - name: dim_customers
+    description: Customer dimension rebuilt in dbt Gold from Silver entities.
+    columns:
+      - name: customer_id
+        description: Customer business key.
+        tests:
+          - not_null
+          - unique
+      - name: customer_unique_id
+        description: Stable customer identifier.
+      - name: customer_zip_code_prefix
+        description: Customer ZIP code prefix.
+      - name: customer_city
+        description: Customer city.
+      - name: customer_state
+        description: Customer state.
+
+  - name: dim_products
+    description: Product dimension rebuilt in dbt Gold from Silver entities.
+    columns:
+      - name: product_id
+        description: Product business key.
+        tests:
+          - not_null
+          - unique
+      - name: product_category_name
+        description: Product category.
+      - name: product_name_length
+        description: Product name length.
+      - name: product_description_length
+        description: Product description length.
+      - name: product_photos_qty
+        description: Number of product photos.
+      - name: product_weight_g
+        description: Product weight in grams.
+      - name: product_length_cm
+        description: Product length in centimeters.
+      - name: product_height_cm
+        description: Product height in centimeters.
+      - name: product_width_cm
+        description: Product width in centimeters.
+
+  - name: dim_sellers
+    description: Seller dimension rebuilt in dbt Gold from Silver entities.
+    columns:
+      - name: seller_id
+        description: Seller business key.
+        tests:
+          - not_null
+          - unique
+      - name: seller_zip_code_prefix
+        description: Seller ZIP code prefix.
+      - name: seller_city
+        description: Seller city.
+      - name: seller_state
+        description: Seller state.
+
+  - name: dim_date
+    description: Date dimension derived from Silver orders and used for reporting and time intelligence.
+    columns:
+      - name: date_key
+        description: Integer date key in YYYYMMDD format.
+        tests:
+          - not_null
+          - unique
+      - name: full_date
+        description: Calendar date.
+      - name: year
+        description: Calendar year.
+      - name: quarter
+        description: Calendar quarter.
+      - name: month
+        description: Calendar month number.
+      - name: month_name
+        description: Calendar month name.
+      - name: day
+        description: Day of month.
+      - name: day_of_week
+        description: Day of week number.
+      - name: day_name
+        description: Day of week name.
+      - name: is_weekend
+        description: Weekend flag.
