@@ -1,226 +1,202 @@
-# 🚀 Big Data Analytics Pipeline with Apache Spark, Hadoop HDFS, Apache Hive & Apache Superset
+# 🚀 Big Data Analytics Pipeline with Apache Spark, Hadoop HDFS, Apache Hive, Apache Airflow, dbt & Apache Superset
 
 ![Python](https://img.shields.io/badge/Python-3.10-blue)
 ![Apache Spark](https://img.shields.io/badge/Apache-Spark-E25A1C)
 ![Hadoop](https://img.shields.io/badge/Hadoop-HDFS-yellow)
 ![Apache Hive](https://img.shields.io/badge/Apache-Hive-orange)
+![Apache Airflow](https://img.shields.io/badge/Apache-Airflow-017CEE)
+![dbt](https://img.shields.io/badge/dbt-FF694B)
 ![Apache Superset](https://img.shields.io/badge/Apache-Superset-20A6C9)
 ![Docker](https://img.shields.io/badge/Docker-2496ED)
 
-An end-to-end Big Data Analytics Pipeline built using **Apache Spark**, **Hadoop HDFS**, **Apache Hive**, and **Apache Superset** to process, store, query, and visualize the **Olist Brazilian E-Commerce Dataset**.
+An end-to-end Big Data Analytics Pipeline built using **Apache Spark**, **Hadoop HDFS**, **Apache Hive**, **Apache Airflow**, **dbt**, and **Apache Superset**.
 
-The project demonstrates a complete modern data engineering workflow, from raw CSV ingestion to analytical warehouse modeling and interactive business intelligence dashboards.
-
----
-
-# 📊 Dashboard
-
-The Apache Superset dashboard is built from the Phase 2 warehouse and tracks the KPI cards and charts described later in this README.
-
-Screenshot assets are not tracked in this repository.
+The project processes the Olist Brazilian E-Commerce dataset and demonstrates data ingestion, distributed storage, dimensional modeling, workflow orchestration, Medallion Architecture, testing, and business intelligence.
 
 ---
 
 # 📌 Project Overview
 
-This project analyzes approximately **100,000 Brazilian e-commerce orders** using distributed data processing and business intelligence technologies.
+The project analyzes approximately **100,000 Brazilian e-commerce orders**.
 
-The project is organized into phases.
+It is organized into three phases.
 
 ## Phase 1 — Data Ingestion and Processing
 
-Phase 1 focuses on building the initial big data pipeline.
+Phase 1 implements the initial big data pipeline:
 
-Implemented tasks include:
+- Read CSV files with Apache Spark
+- Infer schemas
+- Convert CSV datasets to Parquet
+- Store Parquet datasets in HDFS
+- Expose data through Hive
+- Connect Apache Superset
+- Build a business dashboard
 
-- Reading raw CSV datasets using Apache Spark
-- Inferring dataset schemas
-- Transforming CSV files into Apache Parquet format
-- Storing curated Parquet datasets in Hadoop HDFS
-- Creating Hive external tables
-- Connecting Apache Superset to Hive
-- Building an interactive business dashboard
+Raw files:
 
-Raw CSV files live in `data/raw` in the repository and are mounted into the
-container at runtime.
+```text
+data/raw
+```
 
-Curated Phase 1 Parquet datasets are stored in HDFS under:
+Phase 1 HDFS output:
 
 ```text
 hdfs://namenode:9000/olist/parquet
 ```
 
-## Phase 2 — Data Warehouse and Business Analytics
+## Phase 2 — Data Warehouse and Analytics
 
-Phase 2 extends the pipeline with a star-schema analytical warehouse.
+Phase 2 introduces:
 
-Implemented tasks include:
-
-- Data quality assessment
-- ETL architecture design
-- ETL vs ELT comparison
-- dbt foundation work for the Phase 3 transition
-- Star schema design
-- Fact and dimension modeling
+- Data-quality assessment
+- ETL architecture
+- Star Schema
+- Fact and dimension tables
 - Business-question mapping
-- Business analytics dashboard development
-- Technical documentation
+- Revenue allocation
+- Superset KPI cards and charts
 
-The Phase 2 warehouse stores fact and dimension tables under:
+Phase 2 warehouse output:
 
 ```text
 hdfs://namenode:9000/olist/warehouse
 ```
 
-The analytical model is built around an order-item fact table.
+## Phase 3 — Airflow, dbt, and Medallion Architecture
 
-## Phase 3 — Foundation
+Phase 3 reconstructs the pipeline with:
 
-Phase 3 foundation work is now being implemented.
+- Apache Airflow orchestration
+- PostgreSQL Airflow metadata database
+- dbt Bronze, Silver, and Gold models
+- Data-quality tests
+- Gold Star Schema
+- Automated validation
+- Revenue reconciliation
+- Superset metadata refresh
+- Medallion Architecture documentation
 
-Phase 3 uses a Medallion Architecture and begins the migration toward Airflow-driven orchestration and dbt-managed transformations. The existing Phase 2 warehouse scripts remain available during the transition so the current warehouse can continue to run unchanged while Phase 3 is introduced.
-
-Planned work includes:
-
-- Apache Airflow for scheduling, orchestration, and monitoring
-- dbt for modular SQL transformations and testing
-- Bronze, Silver, and Gold Medallion Architecture layers
-- Incremental data loading
-- Automated data quality checks
-- Improved observability and pipeline monitoring
-
-Airflow and dbt are being implemented in Phase 3, starting with repository scaffolding and documentation.
-
-Phase 3.4 implemented the dbt Silver layer, and Phase 3.5 is now rebuilding the Phase 2 star schema in dbt Gold models.
-
-The existing Spark warehouse builders remain available for comparison during the migration.
-
-Medallion boundaries:
-
-- Bronze: source-aligned and minimally processed data
-- Silver: cleaned, typed, and deduplicated business-ready entities
-- Gold: facts, dimensions, KPIs, and reporting marts
-
-The Gold layer will eventually replace the existing Spark-built star schema, while the current Phase 2 warehouse scripts remain available during the migration.
-
-## Phase 3 — Airflow Local Infrastructure
-
-Phase 3 now includes a production-like local Airflow stack for orchestration, scheduling, and monitoring.
-
-Startup command:
-
-```bash
-docker compose -f docker/docker-compose-airflow.yml up -d --build
-```
-
-Airflow UI:
-
-```text
-http://localhost:8085
-```
-
-Local-demo credentials are created by `airflow-init` from environment variables.
-
-The example values in `.env.airflow.example` are for local demonstrations only:
-
-- `AIRFLOW_ADMIN_USERNAME=admin`
-- `AIRFLOW_ADMIN_PASSWORD=admin`
-
-Use environment variables and strong, unique credentials for non-local deployments.
-
-Phase 3.7 connects Airflow to Spark ingestion, dbt `deps`/`debug`/`run`/`test`, readiness checks, and reconciliation artifacts written to `reports/phase3/runs/`.
-
-The `.env.airflow.example` file shows the required environment-variable placeholders for the dbt target and for either a Superset bearer token or a username/password pair.
-
-## Phase 3.8 Documentation Checklist
-
-- Airflow infrastructure with `LocalExecutor`, PostgreSQL metadata storage, and the existing big-data services on `bigdata-net`
-- Airflow DAG orchestration for Spark ingestion, dbt `deps`, `debug`, `run`, `test`, readiness checks, reconciliation, and Superset refresh
-- dbt project scaffolding for Bronze, Silver, and Gold layers with sources, refs, models, tests, macros, docs, and lineage
-- Bronze Parquet ingestion, Silver cleaning and typing, and Gold star-schema rebuilding from Silver only
-- Order-item fact grain with proportional payment allocation and comparison against the Phase 2 Spark-built warehouse
-- Runtime-safe reruns, idempotent metadata refresh, and reconciliation artifacts under `reports/phase3/runs/`
-- Documentation for architecture, challenges, and recovery behavior without removing the Phase 1 or Phase 2 sections
-
-Airflow containers connect to the existing services on `bigdata-net`:
-
-- Spark master: `spark://spark-master:7077`
-- Spark ThriftServer: `spark-thriftserver:10000`
-- HDFS NameNode: `hdfs://namenode:9000`
-- Superset: `http://superset:8088`
-
-Service roles:
-
-| Service | Role |
-|---|---|
-| `airflow-postgres` | PostgreSQL metadata database for Airflow state |
-| `airflow-init` | Migrates the metadata database and creates the local admin user |
-| `airflow-webserver` | Hosts the Airflow UI and API |
-| `airflow-scheduler` | Queues and schedules DAG tasks |
-| `airflow-triggerer` | Handles deferred and async task triggers |
-
-## Phase 3.7 Operations
-
-Run the medallion pipeline from Airflow:
-
-```bash
-docker compose -f docker/docker-compose-airflow.yml exec airflow-webserver \
-  airflow dags trigger olist_medallion_pipeline
-```
-
-Run a one-off DAG test with a specific execution date:
-
-```bash
-docker compose -f docker/docker-compose-airflow.yml exec airflow-webserver \
-  airflow dags test olist_medallion_pipeline 2024-01-01
-```
-
-Check dbt connectivity from the Airflow container:
-
-```bash
-docker compose -f docker/docker-compose-airflow.yml exec airflow-webserver \
-  bash -lc 'cd /opt/airflow/dbt && dbt debug --project-dir /opt/airflow/dbt --profiles-dir /opt/airflow/dbt --target "${AIRFLOW_DBT_TARGET:-local}"'
-```
-
-Refresh dbt packages in the same environment:
-
-```bash
-docker compose -f docker/docker-compose-airflow.yml exec airflow-webserver \
-  bash -lc 'cd /opt/airflow/dbt && dbt deps --project-dir /opt/airflow/dbt --profiles-dir /opt/airflow/dbt'
-```
-
-Inspect reconciliation artifacts:
-
-```bash
-ls -1 reports/phase3/runs/
-```
+The original Spark warehouse scripts remain available for comparison.
 
 ---
 
-# 🏗️ System Architecture
+# 🏗️ Architecture
 
 ```text
-          Olist CSV Dataset
-                 │
-                 ▼
-           Apache Spark
-      CSV Ingestion and ETL
-                 │
-                 ▼
-         Apache Parquet
-                 │
-                 ▼
-            Hadoop HDFS
-       Distributed Storage
-                 │
-                 ▼
-            Apache Hive
-       Metadata and SQL Layer
-                 │
-                 ▼
-         Apache Superset
-      Business Intelligence
+Olist CSV
+    │
+    ▼
+Apache Spark
+    │
+    ▼
+HDFS Bronze Parquet
+    │
+    ▼
+dbt Bronze
+    │
+    ▼
+dbt Silver
+    │
+    ▼
+dbt Gold Star Schema
+    │
+    ▼
+Hive / Spark ThriftServer
+    │
+    ▼
+Apache Superset
 ```
+
+Apache Airflow orchestrates the complete workflow.
+
+---
+
+# 🥉🥈🥇 Medallion Architecture
+
+## Bronze
+
+Bronze models preserve source-aligned data.
+
+Responsibilities:
+
+- Minimal transformation
+- Safe type casting
+- Standardized column names
+- Source traceability
+- No business joins
+
+## Silver
+
+Silver models create cleaned business entities.
+
+Responsibilities:
+
+- Explicit data types
+- Deduplication
+- Payment aggregation
+- Business-key validation
+- Reusable transformations
+- Data-quality tests
+
+## Gold
+
+Gold models provide reporting-ready facts and dimensions.
+
+Models:
+
+- `fact_orders`
+- `dim_customers`
+- `dim_products`
+- `dim_sellers`
+- `dim_date`
+
+---
+
+# 🔄 Airflow DAG
+
+Main DAG:
+
+```text
+olist_medallion_pipeline
+```
+
+Pipeline sequence:
+
+```text
+Preflight Checks
+        ↓
+Validate Source Files
+        ↓
+Spark Ingestion
+        ↓
+Verify Bronze Output
+        ↓
+dbt deps
+        ↓
+dbt debug
+        ↓
+dbt Bronze Run and Test
+        ↓
+dbt Silver Run and Test
+        ↓
+dbt Gold Run and Test
+        ↓
+Reconcile Metrics
+        ↓
+Verify Hive Tables
+        ↓
+Refresh Superset Metadata
+```
+
+Airflow uses:
+
+- LocalExecutor
+- PostgreSQL metadata database
+- Webserver
+- Scheduler
+- Triggerer
+- Environment-variable configuration
 
 ---
 
@@ -229,7 +205,11 @@ ls -1 reports/phase3/runs/
 - Apache Spark
 - Hadoop HDFS
 - Apache Hive
+- Spark ThriftServer
+- Apache Airflow
+- dbt
 - Apache Superset
+- PostgreSQL
 - Docker
 - Python
 - SQL
@@ -239,128 +219,111 @@ ls -1 reports/phase3/runs/
 
 # 📂 Dataset
 
-The project uses the **Brazilian E-Commerce Public Dataset by Olist**.
+The project uses the Brazilian E-Commerce Public Dataset by Olist.
 
 Dataset source:
 
+```text
 https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce
+```
 
-The source contains approximately:
+Main datasets:
 
-- 99,441 orders
-- 99,000+ customers
-- 112,000+ order items
-- 104,000+ payment records
-- 100,000+ reviews
-- 33,000+ products
-- 3,000+ sellers
-- 1 million geolocation records
-
-Main source files:
-
-| File | Approximate Rows | Description |
-|---|---:|---|
-| `olist_orders_dataset.csv` | 100k | Order lifecycle, timestamps, and status |
-| `olist_order_items_dataset.csv` | 112k | Product, seller, price, and freight information |
-| `olist_order_payments_dataset.csv` | 104k | Payment type, installments, and payment value |
-| `olist_order_reviews_dataset.csv` | 100k | Review scores and customer comments |
-| `olist_customers_dataset.csv` | 100k | Customer city, state, and ZIP code |
-| `olist_sellers_dataset.csv` | 3k | Seller city, state, and ZIP code |
-| `olist_products_dataset.csv` | 33k | Product category, dimensions, and weight |
-| `olist_geolocation_dataset.csv` | 1M | ZIP code, latitude, and longitude |
-| `product_category_name_translation.csv` | 71 | Portuguese-to-English category translation |
+| Dataset | Description |
+|---|---|
+| Orders | Order lifecycle and timestamps |
+| Order Items | Product, seller, price, and freight |
+| Payments | Payment type, installments, and value |
+| Reviews | Review scores and comments |
+| Customers | Customer identity and location |
+| Sellers | Seller identity and location |
+| Products | Product category and dimensions |
+| Category Translation | Portuguese-to-English categories |
+| Geolocation | ZIP codes and coordinates |
 
 ---
 
-# ⚙️ Data Processing Pipeline
+# ⚙️ Data Pipeline
 
-## Step 1 — Data Ingestion
+## Step 1 — Ingestion
 
-Apache Spark reads the raw CSV files from the mounted local directory.
+Spark reads CSV files from:
 
-Local input files are converted to valid local URIs using `Path.resolve().as_uri()`.
+```text
+/app/data/raw
+```
 
-Spark schema inference is enabled so numeric, date, and string fields are represented using appropriate data types.
+The local paths are converted with `Path.resolve().as_uri()`.
 
-## Step 2 — Data Transformation
+## Step 2 — Parquet Conversion
 
-Spark transforms the datasets into Apache Parquet format.
+Spark converts CSV datasets to Parquet.
 
-Advantages include:
+Benefits:
 
-- Column-oriented storage
-- Faster analytical queries
-- Better compression
-- Reduced storage usage
-- Improved compatibility with analytical engines
+- Columnar storage
+- Compression
+- Faster queries
+- Better analytical performance
 
-## Step 3 — Distributed Storage
+## Step 3 — HDFS Storage
 
-Processed Parquet datasets are written to Hadoop HDFS.
-
-Phase 1 datasets:
+Parquet data is written to:
 
 ```text
 hdfs://namenode:9000/olist/parquet
 ```
 
-Phase 2 warehouse tables:
+## Step 4 — dbt Transformation
+
+dbt builds:
 
 ```text
-hdfs://namenode:9000/olist/warehouse
+Bronze → Silver → Gold
 ```
 
-## Step 4 — Query Layer
+## Step 5 — SQL Access
 
-Apache Hive provides SQL access to the Parquet datasets.
+Hive and Spark ThriftServer expose analytical models to external clients.
 
-Hive external tables reference the underlying Parquet files without duplicating the data.
+## Step 6 — Business Intelligence
 
-## Step 5 — Business Intelligence
-
-Apache Superset connects to Hive through Spark ThriftServer and provides interactive KPI cards and analytical charts.
+Apache Superset queries the Gold warehouse models.
 
 ---
 
-# 🏛️ Data Warehouse Design
-
-The analytical warehouse follows a **Star Schema** architecture.
+# 🏛️ Star Schema
 
 ## Fact Table
 
 ### `fact_orders`
 
-`fact_orders` is an **order-item fact table**.
-
-Its grain is:
+Grain:
 
 ```text
 one row per order_id + order_item_id
 ```
 
-This grain supports product-, seller-, customer-, order-, and payment-level analysis while preventing duplicate revenue caused by joining multiple payment rows directly to multiple order items.
+Important fields:
 
-Important measures and derived columns include:
-
+- `order_id`
+- `order_item_id`
+- `customer_id`
+- `seller_id`
+- `product_id`
+- `date_key`
+- `order_status`
 - `price`
 - `freight_value`
 - `item_gross_value`
 - `order_items_gross_total`
 - `order_payment_value`
 - `allocated_payment_value`
-- `review_score`
-- `primary_payment_installments`
-
-Important grouping columns include:
-
-- `order_status`
 - `primary_payment_type`
+- `primary_payment_installments`
+- `review_score`
 
-## Payment Allocation Logic
-
-Payment records are first aggregated at order level before being joined to order items.
-
-Order-level payment value is allocated proportionally to each item:
+## Payment Allocation
 
 ```text
 item_gross_value = price + freight_value
@@ -373,118 +336,18 @@ allocated_payment_value =
     ÷ order_items_gross_total
 ```
 
-This prevents revenue from being multiplied when an order contains multiple items or multiple payment records.
+This prevents duplicated revenue when an order has multiple items or payment records.
 
-## Dimension Tables
+## Dimensions
 
-### `dim_customers`
-
-Contains customer attributes such as:
-
-- `customer_id`
-- `customer_unique_id`
-- `customer_city`
-- `customer_state`
-- `customer_zip_code_prefix`
-
-### `dim_products`
-
-Contains product attributes such as:
-
-- `product_id`
-- `product_category_name`
-- `product_weight_g`
-- Product dimensions
-
-### `dim_sellers`
-
-Contains seller attributes such as:
-
-- `seller_id`
-- `seller_city`
-- `seller_state`
-- `seller_zip_code_prefix`
-
-### `dim_date`
-
-Contains date attributes such as:
-
-- `date_key`
-- `date`
-- `year`
-- `month`
-- `day`
-
-Dimension builders preserve one row per dimension key using `dropDuplicates`.
+- `dim_customers`
+- `dim_products`
+- `dim_sellers`
+- `dim_date`
 
 ---
 
-# 🔄 ETL Architecture
-
-The project follows a traditional **ETL** workflow.
-
-## Extract
-
-- Read raw CSV files using Apache Spark
-- Load source datasets into Spark DataFrames
-
-## Transform
-
-- Infer schemas
-- Cast numeric columns
-- Select required attributes
-- Deduplicate dimension entities
-- Aggregate payment records
-- Join source datasets
-- Build fact and dimension tables
-- Convert results into Parquet
-
-## Load
-
-- Write curated datasets to Hadoop HDFS
-- Store warehouse tables in HDFS
-- Register tables through Hive
-- Query data through Apache Superset
-
-## ETL vs ELT
-
-ETL was selected because Spark performs distributed transformations before data is exposed to the analytical layer.
-
-In an ELT architecture, raw data would first be loaded into the warehouse and transformed later using SQL.
-
-dbt is being implemented in Phase 3 as the transformation framework because it supports:
-
-- Modular SQL models
-- Testing
-- Documentation
-- Lineage
-- Version-controlled transformations
-
-dbt is part of the active Phase 3 foundation work in this repository.
-
----
-
-# 💼 Business Questions
-
-The analytical warehouse supports the following business questions:
-
-| Business Question | Fact Table | Main Dimensions |
-|---|---|---|
-| Monthly revenue | `fact_orders` | `dim_date` |
-| Revenue by product category | `fact_orders` | `dim_products` |
-| Top-performing sellers | `fact_orders` | `dim_sellers` |
-| Sales by customer state | `fact_orders` | `dim_customers` |
-| Payment method trends | `fact_orders` | `primary_payment_type` |
-| Average review score by category | `fact_orders` | `dim_products` |
-| Revenue by order status | `fact_orders` | `order_status` |
-
-Average delivery time by state is identified as a future extension because the current fact table does not include all delivery-duration fields required for that analysis.
-
----
-
-# 📈 Dashboard Metrics
-
-The Apache Superset dashboard contains KPI cards and business-oriented visualizations.
+# 📊 Dashboard
 
 ## KPIs
 
@@ -502,12 +365,31 @@ The Apache Superset dashboard contains KPI cards and business-oriented visualiza
 
 ## Charts
 
-- Payment Type Distribution using `primary_payment_type`
+- Payment Type Distribution
 - Order Status Distribution
-- Revenue by Order Status using `allocated_payment_value`
+- Revenue by Order Status
 - Review Score Distribution
 
-These visualizations provide a concise overview of marketplace performance, payment behavior, order fulfillment, and customer satisfaction.
+---
+
+# 🧪 Data Quality
+
+dbt tests include:
+
+- Unique keys
+- Not-null keys
+- Relationship checks
+- Accepted order statuses
+- Review-score validation
+- Positive numeric values
+- Fact-grain validation
+- Payment reconciliation
+
+Custom tests are stored under:
+
+```text
+dbt/macros/generic_tests.sql
+```
 
 ---
 
@@ -515,67 +397,29 @@ These visualizations provide a concise overview of marketplace performance, paym
 
 ```text
 BigData-Pipeline-Project/
-├── .env.airflow.example
-├── .gitignore
 ├── airflow/
-│   ├── config/
-│   │   └── .gitkeep
 │   ├── dags/
-│   │   ├── .gitkeep
 │   │   └── olist_medallion_pipeline.py
+│   ├── config/
 │   ├── logs/
-│   │   └── .gitkeep
 │   └── plugins/
-│       └── .gitkeep
 ├── dbt/
 │   ├── dbt_project.yml
+│   ├── profiles.yml.example
 │   ├── macros/
 │   │   └── generic_tests.sql
 │   ├── models/
 │   │   ├── bronze/
-│   │   │   ├── README.md
-│   │   │   ├── sources.yml
-│   │   │   ├── stg_category_translation.sql
-│   │   │   ├── stg_customers.sql
-│   │   │   ├── stg_order_items.sql
-│   │   │   ├── stg_order_payments.sql
-│   │   │   ├── stg_order_reviews.sql
-│   │   │   ├── stg_orders.sql
-│   │   │   ├── stg_products.sql
-│   │   │   └── stg_sellers.sql
-│   │   ├── gold/
-│   │   │   ├── README.md
-│   │   │   ├── dim_customers.sql
-│   │   │   ├── dim_date.sql
-│   │   │   ├── dim_products.sql
-│   │   │   ├── dim_sellers.sql
-│   │   │   ├── fact_orders.sql
-│   │   │   └── schema.yml
-│   │   └── silver/
-│   │       ├── README.md
-│   │       ├── customers.sql
-│   │       ├── order_items.sql
-│   │       ├── order_payments.sql
-│   │       ├── order_reviews.sql
-│   │       ├── orders.sql
-│   │       ├── products.sql
-│   │       ├── schema.yml
-│   │       └── sellers.sql
-│   ├── profiles.yml.example
+│   │   ├── silver/
+│   │   └── gold/
 │   ├── seeds/
-│   │   └── .gitkeep
 │   ├── snapshots/
-│   │   └── .gitkeep
 │   └── tests/
-│       └── .gitkeep
 ├── docker/
 │   ├── Dockerfile.airflow
-│   ├── Dockerfile.dev
 │   ├── Dockerfile.superset
 │   ├── docker-compose-airflow.yml
-│   ├── docker-compose-dev.yml
 │   ├── docker-compose-hdfs.yml
-│   ├── docker-compose-minio.yml
 │   ├── docker-compose-spark.yml
 │   └── docker-compose-superset.yml
 ├── processing/
@@ -584,172 +428,214 @@ BigData-Pipeline-Project/
 │   ├── logger.py
 │   ├── spark_session.py
 │   └── warehouse/
-│       ├── build_dim_customers.py
-│       ├── build_dim_date.py
-│       ├── build_dim_products.py
-│       ├── build_dim_sellers.py
-│       └── build_fact_orders.py
 ├── reports/
 │   └── phase3/
 │       └── runs/
-│           └── .gitkeep
+├── tests/
+│   └── test_olist_medallion_pipeline.py
+├── .env.airflow.example
+├── .gitignore
 ├── DESIGN.md
-├── README.md
-└── .gitignore
+└── README.md
 ```
 
 ---
 
 # ▶️ Running the Project
 
-Clone the repository:
+## 1. Clone
 
 ```bash
 git clone https://github.com/BeyzanurArslaan/BigData-Pipeline-Project.git
 cd BigData-Pipeline-Project
 ```
 
-Start Hadoop:
+## 2. Start Docker Desktop
+
+Verify:
+
+```bash
+docker info
+```
+
+## 3. Create the shared network
+
+```bash
+docker network create bigdata-net
+```
+
+If it already exists, Docker may return an error that can be ignored.
+
+## 4. Start HDFS
 
 ```bash
 docker compose -f docker/docker-compose-hdfs.yml up -d
 ```
 
-Start Spark:
+## 5. Start Spark
 
 ```bash
 docker compose -f docker/docker-compose-spark.yml up -d
 ```
 
-Start Apache Superset:
+## 6. Start Superset
 
 ```bash
 docker compose -f docker/docker-compose-superset.yml up -d
 ```
 
-Start Apache Airflow:
+## 7. Configure Airflow
 
 ```bash
-docker compose -f docker/docker-compose-airflow.yml up -d --build
+cp .env.airflow.example .env.airflow
 ```
 
-Check running services:
+Update local demo credentials and secret values.
+
+## 8. Start Airflow
 
 ```bash
-docker ps
+docker compose \
+  --env-file .env.airflow \
+  -f docker/docker-compose-airflow.yml \
+  up -d --build
 ```
 
-Open the interfaces:
+---
+
+# 🌐 Service URLs
 
 | Service | URL |
 |---|---|
-| HDFS NameNode | http://localhost:9870 |
+| Hadoop NameNode | http://localhost:9870 |
 | Spark Master | http://localhost:8080 |
 | Apache Superset | http://localhost:8088 |
 | Apache Airflow | http://localhost:8085 |
 
-## Superset Local Demo Credentials
+---
 
-```text
-Username: admin
-Password: admin
+# ▶️ Triggering the DAG
+
+```bash
+docker compose \
+  --env-file .env.airflow \
+  -f docker/docker-compose-airflow.yml \
+  exec airflow-webserver \
+  airflow dags trigger olist_medallion_pipeline
 ```
 
-These credentials are for local demonstrations only.
+Test one DAG run:
 
-Use environment variables and strong, unique credentials for non-local deployments.
-
-## Airflow Local Demo Credentials
-
-The Airflow admin user is created by `airflow-init` from environment variables.
-
-The example credentials in `.env.airflow.example` are for local demos only:
-
-- Username: `admin`
-- Password: `admin`
-
-Use strong credentials for any non-local deployment.
+```bash
+docker compose \
+  --env-file .env.airflow \
+  -f docker/docker-compose-airflow.yml \
+  exec airflow-webserver \
+  airflow dags test olist_medallion_pipeline 2024-01-01
+```
 
 ---
 
-# ▶️ Running Spark Jobs
+# ▶️ dbt Commands
 
-Enter the Spark container:
+Run dbt from the Airflow container:
 
 ```bash
-docker exec -it spark-master bash
+docker compose \
+  --env-file .env.airflow \
+  -f docker/docker-compose-airflow.yml \
+  exec airflow-webserver \
+  bash
 ```
 
-Move to the mounted project directory:
+Inside the container:
 
 ```bash
-cd /app
-```
-
-Run Phase 1 ingestion:
-
-```bash
-PYTHONPATH=/app \
-/spark/bin/spark-submit processing/analysis.py
-```
-
-Run warehouse builders:
-
-```bash
-PYTHONPATH=/app \
-/spark/bin/spark-submit processing/warehouse/build_fact_orders.py
+cd /opt/airflow/dbt
 ```
 
 ```bash
-PYTHONPATH=/app \
-/spark/bin/spark-submit processing/warehouse/build_dim_customers.py
+dbt deps
 ```
 
 ```bash
-PYTHONPATH=/app \
-/spark/bin/spark-submit processing/warehouse/build_dim_products.py
+dbt debug
 ```
 
 ```bash
-PYTHONPATH=/app \
-/spark/bin/spark-submit processing/warehouse/build_dim_sellers.py
+dbt run
 ```
 
 ```bash
-PYTHONPATH=/app \
-/spark/bin/spark-submit processing/warehouse/build_dim_date.py
+dbt test
+```
+
+```bash
+dbt docs generate
+```
+
+---
+
+# 🧪 Local Tests
+
+Compile Python files:
+
+```bash
+python3 -m compileall processing airflow
+```
+
+Run DAG unit tests:
+
+```bash
+python3 -m pytest tests/test_olist_medallion_pipeline.py
+```
+
+Current local result:
+
+```text
+2 passed, 4 skipped
+```
+
+The skipped tests require the full Airflow runtime dependencies.
+
+Check formatting:
+
+```bash
+git diff --check
 ```
 
 ---
 
 # ✅ Project Outcomes
 
-Successfully implemented:
+Implemented:
 
-- Apache Spark ETL pipeline
-- CSV-to-Parquet transformation
-- Hadoop HDFS distributed storage
-- Apache Hive SQL integration
-- Star schema data warehouse
+- Spark CSV ingestion
+- CSV-to-Parquet conversion
+- HDFS distributed storage
+- Hive SQL integration
+- Spark ThriftServer
+- Star Schema
 - Order-item fact table
-- Fact and dimension modeling
-- Payment aggregation and allocation
-- Business-question mapping
-- Interactive Apache Superset dashboard
-- End-to-end big data analytics workflow
+- Payment aggregation
+- Proportional payment allocation
+- Airflow orchestration
+- dbt Bronze layer
+- dbt Silver layer
+- dbt Gold layer
+- dbt tests
+- Medallion Architecture
+- Superset dashboard
+- Reconciliation output
+- DAG unit tests
 
 ---
 
-# 📄 Documentation
+# ⚠️ Validation Note
 
-The repository includes:
+Source code compilation, Git validation, conflict-marker checks, and DAG unit tests were completed successfully.
 
-- `README.md`
-- `DESIGN.md`
-- Airflow repository scaffolding
-- dbt repository scaffolding
-- Spark ingestion scripts
-- Spark warehouse scripts
+Full end-to-end execution requires all Docker services and external dependencies to be running together.
 
 ---
 

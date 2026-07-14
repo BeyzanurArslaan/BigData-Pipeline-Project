@@ -2,377 +2,725 @@
 
 ## Project Overview
 
-This project implements an end-to-end Big Data Analytics Pipeline using Apache Spark, Hadoop HDFS, Apache Hive, and Apache Superset.
+This project implements an end-to-end Big Data Analytics Pipeline using Apache Spark, Hadoop HDFS, Apache Hive, Apache Superset, Apache Airflow, and dbt.
 
-The objective is to transform raw e-commerce data into an analytical data warehouse and provide business insights through interactive dashboards.
+The objective is to transform raw e-commerce data into reliable analytical datasets, organize them through a dimensional warehouse, automate the data workflow, and provide business insights through interactive dashboards.
 
-The first two phases are complete, and Phase 3 is now being implemented:
+The project is organized into three phases:
 
-- **Phase 1:** Data ingestion, transformation, storage, and visualization.
-- **Phase 2:** Data warehouse design, ETL documentation, star schema modeling, and business analytics.
-- **Phase 3:** Airflow orchestration, dbt transformation scaffolding, and a Medallion Architecture migration.
+- **Phase 1:** Data ingestion, Spark processing, Parquet conversion, HDFS storage, Hive integration, and Superset visualization.
+- **Phase 2:** Data quality analysis, ETL design, star schema modeling, fact and dimension tables, and business analytics.
+- **Phase 3:** Airflow orchestration, dbt transformations, Bronze-Silver-Gold Medallion Architecture, data quality testing, and automated pipeline execution.
+
+The existing Spark-based Phase 2 warehouse remains available for comparison, while the dbt Gold models represent the Phase 3 transformation path.
 
 ---
 
 # System Architecture
 
-```
+```text
           Olist CSV Dataset
                  │
                  ▼
            Apache Spark
-      (Extract & Transform)
+        Ingestion and ETL
                  │
                  ▼
-        Apache Parquet Files
+      HDFS Bronze Parquet Layer
                  │
                  ▼
-           Hadoop HDFS
-      (Distributed Storage)
+            dbt Bronze
+       Source-Aligned Models
                  │
                  ▼
-            Apache Hive
-      (Metadata & SQL Layer)
+            dbt Silver
+     Cleaned Business Entities
+                 │
+                 ▼
+             dbt Gold
+       Star Schema and Marts
+                 │
+                 ▼
+      Hive / Spark ThriftServer
                  │
                  ▼
          Apache Superset
-    (Business Intelligence)
+      Business Intelligence
 ```
+
+Apache Airflow orchestrates the complete sequence, including readiness checks, Spark ingestion, dbt transformations, validation, reconciliation, and Superset metadata refresh.
 
 ---
 
 # Architecture Layers
 
-The project follows a layered architecture.
-
 ## 1. Data Source Layer
 
-- Olist Brazilian E-Commerce Dataset
-- CSV files
+The source layer contains the Olist Brazilian E-Commerce CSV datasets.
+
+Main entities include:
+
+- Orders
+- Order items
+- Payments
+- Reviews
+- Customers
+- Sellers
+- Products
+- Product category translations
+- Geolocation
+
+Raw files are stored under:
+
+```text
+data/raw
+```
+
+Inside Docker containers, the project is mounted under:
+
+```text
+/app
+```
 
 ---
 
 ## 2. Processing Layer
 
-Apache Spark performs:
+Apache Spark performs the initial distributed processing.
+
+Responsibilities include:
 
 - Reading CSV files
-- Schema inference
-- Data cleaning
-- Data transformation
-- Parquet conversion
+- Inferring schemas
+- Applying safe type detection
+- Converting data to Parquet
+- Writing datasets to HDFS
+- Supporting the original Phase 2 warehouse builders
+
+Phase 1 Parquet outputs are written to:
+
+```text
+hdfs://namenode:9000/olist/parquet
+```
 
 ---
 
-## 3. Storage Layer
+## 3. Medallion Transformation Layer
 
-Hadoop HDFS stores all processed datasets in distributed storage.
+Phase 3 introduces a Medallion Architecture.
 
-Phase 1 writes curated Parquet datasets to the configured HDFS Parquet URI, and Phase 2 writes the warehouse fact and dimension tables to the configured HDFS warehouse URI. Raw CSV inputs remain mounted locally inside the container filesystem.
+### Bronze Layer
 
-Benefits include:
+The Bronze layer preserves source-aligned datasets with minimal transformation.
 
+Responsibilities:
+
+- Preserve source grain
+- Standardize column names
+- Apply safe basic casts
+- Keep data traceable to the source
+- Avoid business joins and KPI calculations
+
+### Silver Layer
+
+The Silver layer contains cleaned and reusable business entities.
+
+Responsibilities:
+
+- Explicit data typing
+- Deduplication
+- Business-key enforcement
+- Payment aggregation
+- Review normalization
+- Order-item value calculations
+- Data quality validation
+
+### Gold Layer
+
+The Gold layer contains dimensional models used by analytics and reporting.
+
+Gold models include:
+
+- `fact_orders`
+- `dim_customers`
+- `dim_products`
+- `dim_sellers`
+- `dim_date`
+
+The Gold layer is designed for Apache Superset and business-oriented SQL queries.
+
+---
+
+## 4. Storage Layer
+
+Hadoop HDFS provides distributed storage for Parquet datasets.
+
+Main storage locations:
+
+```text
+hdfs://namenode:9000/olist/parquet
+```
+
+```text
+hdfs://namenode:9000/olist/warehouse
+```
+
+HDFS provides:
+
+- Distributed storage
 - Fault tolerance
 - Scalability
-- High availability
+- Shared access between analytical services
 
 ---
 
-## 4. Query Layer
+## 5. Query Layer
 
-Apache Hive provides SQL access through external tables built on Parquet files.
+Apache Hive and Spark ThriftServer provide SQL access to the analytical datasets.
 
-No data duplication is required because Hive references the existing files.
+Spark ThriftServer runs against:
 
----
+```text
+spark://spark-master:7077
+```
 
-## 5. Visualization Layer
+External SQL clients such as Apache Superset connect through the Thrift interface.
 
-Apache Superset connects directly to Hive and provides:
-
-- KPI Cards
-- Business Charts
-- Interactive Dashboards
+This layer allows analytical querying without copying the underlying Parquet data.
 
 ---
 
-# ETL Design
+## 6. Orchestration Layer
 
-The project follows a traditional **ETL (Extract, Transform, Load)** workflow.
+Apache Airflow controls pipeline execution.
 
-## Extract
+Airflow responsibilities include:
 
-Raw CSV files are loaded into Apache Spark DataFrames.
+- Scheduling
+- Dependency management
+- Retry handling
+- Task monitoring
+- Failure visibility
+- Pipeline reruns
+- Service-readiness checks
+- Reconciliation
+- Superset metadata refresh
 
-## Transform
+The Airflow stack uses:
 
-Data is processed by:
-
-- Cleaning records
-- Selecting required columns
-- Joining datasets
-- Building analytical tables
-- Converting CSV to Parquet
-
-## Load
-
-The transformed datasets are:
-
-- Stored in Hadoop HDFS
-- Registered as Hive external tables
-- Queried from Apache Superset
+- Airflow Webserver
+- Airflow Scheduler
+- Airflow Triggerer
+- LocalExecutor
+- PostgreSQL metadata database
+- Airflow initialization service
 
 ---
 
-# ETL vs ELT
+## 7. Visualization Layer
 
-This project uses the ETL approach because all transformations are completed before loading the data into the analytical environment.
+Apache Superset provides the business intelligence interface.
 
-Compared to ELT, ETL reduces dashboard query complexity and improves analytical performance.
+It supports:
 
-The project documentation also discusses modern ELT architectures and dbt as part of the active Phase 3 transformation plan. Apache Airflow is now being implemented as the orchestration layer for Phase 3.
+- KPI cards
+- Distribution charts
+- Revenue analysis
+- Order-status analysis
+- Customer review analysis
+- Interactive dashboards
 
-## Phase 3 Foundation
+---
 
-Phase 3 is now being implemented around a Medallion Architecture. Airflow and dbt are part of the active Phase 3 buildout, while the existing Phase 2 warehouse scripts remain available during the migration so the current warehouse can keep running unchanged.
+# ETL and ELT Design
 
-Phase 3.5 rebuilds the Phase 2 star schema as dbt Gold models while keeping the Spark builders available for comparison until migration is complete.
+## Phase 1 and Phase 2 ETL
 
-Phase 3.7 connects Airflow to the Spark ingestion job, dbt `deps`/`debug`/`run`/`test`, preflight readiness checks, idempotent Superset refresh, and reconciliation artifacts stored under `reports/phase3/runs/`.
+The original pipeline follows an ETL workflow.
 
-## Medallion Architecture
+### Extract
+
+Raw CSV files are read into Spark DataFrames.
+
+### Transform
+
+Spark performs:
+
+- Schema inference
+- Type conversion
+- Record cleaning
+- Dataset joins
+- Payment aggregation
+- Fact and dimension creation
+- Parquet conversion
+
+### Load
+
+Processed datasets are written to HDFS and exposed through Hive.
+
+---
+
+## Phase 3 Transformation Model
+
+Phase 3 separates ingestion from warehouse transformation.
+
+Spark remains responsible for ingestion and Parquet generation.
+
+dbt becomes responsible for:
+
+- Bronze source models
+- Silver cleaning and business logic
+- Gold dimensional models
+- Tests
+- Documentation
+- Lineage
+
+This design is closer to an ELT-style analytical workflow because transformed source data is exposed through the query engine and then modeled with dbt SQL.
+
+---
+
+# Medallion Architecture
 
 ```mermaid
 flowchart LR
-    A[Olist CSV] --> B[Spark ingestion]
+    A[Olist CSV Files] --> B[Apache Spark Ingestion]
     B --> C[HDFS Bronze Parquet]
-    C --> D[dbt Bronze]
-    D --> E[dbt Silver]
-    E --> F[dbt Gold star schema]
+    C --> D[dbt Bronze Models]
+    D --> E[dbt Silver Models]
+    E --> F[dbt Gold Star Schema]
     F --> G[Hive / Spark SQL]
-    G --> H[Superset]
+    G --> H[Apache Superset]
+    I[Apache Airflow] --> B
+    I --> D
+    I --> E
+    I --> F
+    I --> G
+    I --> H
 ```
 
-Bronze is source-aligned and minimally processed, Silver is cleaned and business-ready, and Gold contains facts, dimensions, KPIs, and reporting marts.
+## Medallion Benefits
 
-The medallion layout provides:
-
-- clear data contracts
-- easier testing
-- modular transformations
-- lineage
-- maintainability
-- fault isolation
+- Clear data boundaries
+- Modular transformations
+- Better lineage
+- Easier testing
+- Improved maintainability
+- Fault isolation
+- Easier debugging
+- Reusable business entities
+- Separation of ingestion and modeling
 
 ---
 
-## Airflow DAG Flow
+# Airflow Core Components
+
+- **DAG:** Defines workflow structure, dependencies, and scheduling.
+- **Scheduler:** Evaluates DAGs and queues runnable tasks.
+- **Webserver:** Provides the Airflow user interface and API.
+- **Executor:** Defines how tasks are executed; this project uses `LocalExecutor`.
+- **Metadata Database:** Stores task state, DAG runs, connections, variables, and history.
+- **Operator:** Defines how a task executes, such as Python or Bash.
+- **Task:** Represents one unit of work inside a DAG.
+- **Triggerer:** Handles asynchronous and deferred tasks.
+- **XCom:** Passes small metadata values between tasks.
+- **Connection:** Stores external system endpoints and credentials outside DAG code.
+
+---
+
+# Airflow DAG Design
+
+The main DAG is:
+
+```text
+olist_medallion_pipeline
+```
+
+## DAG Flow
 
 ```mermaid
 flowchart TD
-    A[Preflight checks] --> B[Validate source files]
-    B --> C[Spark ingestion]
-    C --> D[Verify Bronze output]
+    A[Preflight Checks] --> B[Validate Source Files]
+    B --> C[Run Spark Ingestion]
+    C --> D[Verify Bronze Output]
     D --> E[dbt deps]
     E --> F[dbt debug]
-    F --> G[dbt Bronze run]
-    G --> H[dbt Bronze test]
-    H --> I[dbt Silver run]
-    I --> J[dbt Silver test]
-    J --> K[dbt Gold run]
-    K --> L[dbt Gold test]
-    L --> M[Reconcile Gold metrics]
-    M --> N[Verify Hive tables]
-    N --> O[Refresh Superset metadata]
+    F --> G[dbt Bronze Run]
+    G --> H[dbt Bronze Test]
+    H --> I[dbt Silver Run]
+    I --> J[dbt Silver Test]
+    J --> K[dbt Gold Run]
+    K --> L[dbt Gold Test]
+    L --> M[Reconcile Gold Metrics]
+    M --> N[Verify Hive Tables]
+    N --> O[Refresh Superset Metadata]
 ```
 
-## Airflow Core Components
+## Task Boundaries
 
-- **DAG:** A DAG is the directed acyclic graph that defines workflow order, dependencies, and scheduling for the pipeline.
-- **Scheduler:** The scheduler parses DAG files, evaluates dependencies, and queues runnable task instances.
-- **Webserver:** The webserver serves the UI and API for browsing DAGs, inspecting runs, and operating the orchestration environment.
-- **Executor:** The executor decides how tasks are dispatched; `LocalExecutor` runs them on the local Airflow host with parallel worker slots.
-- **Metadata Database:** The metadata database stores DAG definitions, task state, run history, connections, variables, and other Airflow metadata.
-- **Operator:** An operator is a reusable execution template, such as `PythonOperator` or `BashOperator`, that defines how a task runs.
-- **Task:** A task is one unit of work in the DAG, such as source validation, Spark ingestion, dbt execution, or metadata refresh.
-- **Triggerer:** The triggerer manages deferred tasks and asynchronous triggers without holding worker slots open.
-- **XCom:** XCom is Airflow's lightweight cross-communication mechanism for passing small metadata values between tasks.
-- **Connection:** A connection is a named credential or endpoint reference stored outside the DAG code and used by operators at runtime.
+### Preflight Tasks
 
-## Airflow DAG Walkthrough
+Validate that required services are reachable:
 
-- **Task sequence:** The DAG runs preflight checks first, then validates source CSV files, ingests Bronze Parquet, runs dbt Bronze/Silver/Gold, reconciles the Gold outputs, verifies Hive tables, and finally refreshes Superset metadata.
-- **Task boundaries:** Spark ingestion stays in a Python boundary around the existing Spark job, dbt steps stay in Bash boundaries, and Superset refresh stays in a small HTTP boundary so each external system is isolated.
-- **Operator choices:** `PythonOperator` handles lightweight checks and Python-based wrappers, while `BashOperator` keeps dbt commands explicit and easy to rerun.
-- **Retries:** The DAG retries tasks twice with a five-minute delay, which helps transient HDFS, Spark, Hive, or HTTP issues recover without manual intervention.
-- **Timeouts:** Long-running Spark and dbt tasks use explicit execution timeouts, while validation and refresh tasks stay short-lived.
-- **Resources:** Spark ingestion targets the configured Spark master, dbt uses the configured ThriftServer connection, and validation tasks return only small metadata values through XCom.
-- **Rerun behavior:** Every task is designed to be safe to rerun, and reconciliation artifacts are keyed by the Airflow run identifier so a failed run can be repeated without overwriting unrelated results.
+- HDFS
+- Spark Master
+- Spark ThriftServer
+- Superset
+- Source files
 
-## dbt Project
+### Spark Task
 
-- **Sources:** Bronze source declarations in `dbt/models/bronze/sources.yml` map the Spark-produced Parquet datasets into dbt sources.
-- **Refs:** `ref()` links Bronze, Silver, and Gold models together so lineage is explicit and dbt can build models in dependency order.
-- **Models:** Bronze models are source-aligned views, Silver models are cleaned and typed tables, and Gold models rebuild the dimensional warehouse.
-- **Tests:** Built-in and custom tests enforce uniqueness, relationships, accepted values, positive-value constraints, and reconciliation checks.
-- **Macros:** Custom macros in `dbt/macros/generic_tests.sql` handle reusable quality checks that are not covered cleanly by built-in tests.
-- **Documentation:** Model and column descriptions are stored in dbt schema YAML files so the warehouse stays self-describing.
-- **Lineage:** dbt captures lineage automatically through source declarations and `ref()` usage, which makes the transformation graph easier to reason about.
+Runs the existing Spark ingestion job.
 
-## Bronze, Silver, and Gold
+This task remains separate because Spark manages distributed file ingestion and Parquet creation.
 
-- **Bronze:** Bronze keeps source-aligned Parquet data with only safe casts and naming alignment, so the raw business meaning is preserved.
-- **Silver:** Silver cleans, types, and deduplicates records into reusable business-ready entities and aggregates.
-- **Gold:** Gold turns Silver into reporting marts, including the order-item fact table and the dimensional model used by Superset.
+### dbt Tasks
 
-## Why the Spark Star Schema Moved to dbt
+dbt tasks run through explicit Bash commands:
 
-The original Spark-built star schema worked, but the migration to dbt Gold models gives the warehouse clearer lineage, reusable SQL models, layered testing, and a more maintainable transformation boundary.
+- `dbt deps`
+- `dbt debug`
+- `dbt run`
+- `dbt test`
 
-dbt also makes it easier to express the Bronze/Silver/Gold contracts separately from the Spark ingestion code, so the ingestion job can stay focused on loading data while dbt owns warehouse shaping and validation.
+Bronze, Silver, and Gold are executed as separate stages so failures can be isolated.
 
-## Benefits
+### Validation Tasks
 
-- modularity
-- lineage
-- testing
-- maintainability
-- reusable SQL models
-- separation of concerns
-- data quality boundaries
+Validation tasks check:
 
-## Challenges
+- Dataset counts
+- Gold fact row counts
+- Revenue reconciliation
+- Hive table availability
+- dbt test results
 
-- Spark/HDFS/dbt interoperability required the same data layout to be readable by both Spark jobs and the dbt query engine.
-- Query-engine and adapter selection had to match the available Spark ThriftServer/Hive path rather than a new warehouse engine.
-- Payment row multiplication had to be removed by aggregating payments before joining to order items.
-- Fact grain preservation had to stay at one row per order item so the Gold fact did not duplicate revenue.
-- Airflow container access to Spark had to be configured through the shared Docker network and external service endpoints.
-- Idempotency mattered for reruns, so tasks, output paths, and Superset refresh behavior were written to be repeatable.
-- Service readiness checks were needed before orchestration started so failures happened early and visibly.
-- ARM64 and AMD64 Docker image differences affected image availability and dependency resolution.
-- Hive metastore persistence matters because warehouse tables and ThriftServer metadata need stable state across container restarts.
+### Publication Task
+
+The final task refreshes Superset metadata after successful warehouse validation.
+
+---
+
+# Airflow Runtime Configuration
+
+The DAG uses:
+
+- `catchup=False`
+- `max_active_runs=1`
+- Two retries
+- Five-minute retry delay
+- Explicit task timeouts
+- Small XCom payloads only
+
+XCom values are limited to metadata such as:
+
+- Row counts
+- Run identifiers
+- Validation status
+- Dataset counts
+
+DataFrames and large files are never stored in XCom.
+
+---
+
+# dbt Project Design
+
+The dbt project is located under:
+
+```text
+dbt/
+```
+
+Main directories:
+
+```text
+dbt/models/bronze
+dbt/models/silver
+dbt/models/gold
+dbt/macros
+dbt/tests
+dbt/seeds
+dbt/snapshots
+```
+
+## dbt Sources
+
+Bronze sources are declared in:
+
+```text
+dbt/models/bronze/sources.yml
+```
+
+Sources include:
+
+- Orders
+- Order items
+- Payments
+- Reviews
+- Customers
+- Sellers
+- Products
+- Category translations
+
+## dbt References
+
+Models use `ref()` to create explicit dependencies.
+
+Example:
+
+```text
+Bronze → Silver → Gold
+```
+
+This allows dbt to determine execution order and generate lineage.
+
+## dbt Tests
+
+The project uses:
+
+- `not_null`
+- `unique`
+- `relationships`
+- `accepted_values`
+- Positive numeric checks
+- Composite-key checks
+- Reconciliation checks
+
+Custom tests are defined in:
+
+```text
+dbt/macros/generic_tests.sql
+```
 
 ---
 
 # Data Warehouse Design
 
-A Star Schema was implemented for analytical reporting.
-
-The Spark-built Phase 2 warehouse remains available for comparison, but the dbt Gold models are now the primary Phase 3 transformation path.
+The warehouse uses a Star Schema.
 
 ## Fact Table
 
-**fact_orders**
+### `fact_orders`
 
-Order-item fact table with one row per `order_id` + `order_item_id`.
+The grain is:
 
-Measures:
+```text
+one row per order_id + order_item_id
+```
 
-- item_gross_value
-- order_items_gross_total
-- order_payment_value
-- allocated_payment_value
-- price
-- freight_value
-- review_score
-- primary_payment_installments
+Important keys:
 
-Keys:
+- `order_id`
+- `order_item_id`
+- `customer_id`
+- `seller_id`
+- `product_id`
+- `date_key`
 
-- order_id
-- order_item_id
-- customer_id
-- seller_id
-- product_id
-- date_key
+Important measures:
 
-Primary grouping column:
+- `price`
+- `freight_value`
+- `item_gross_value`
+- `order_items_gross_total`
+- `order_payment_value`
+- `allocated_payment_value`
+- `review_score`
+- `primary_payment_installments`
 
-- primary_payment_type
+Important dimensions and groupings:
 
-Order-level payments are aggregated before joining to order items, and `allocated_payment_value` is allocated proportionally from each item's gross value so revenue is not duplicated across payment rows.
+- `order_status`
+- `primary_payment_type`
+
+---
+
+## Payment Allocation
+
+Payments are first aggregated at order level.
+
+```text
+item_gross_value = price + freight_value
+```
+
+```text
+allocated_payment_value =
+    order_payment_value
+    × item_gross_value
+    ÷ order_items_gross_total
+```
+
+This design prevents payment values from being duplicated when orders contain multiple items or multiple payment rows.
 
 ---
 
 ## Dimension Tables
 
-### dim_customers
+### `dim_customers`
 
-Customer information.
+Contains customer identity and geographic information.
 
-### dim_products
+### `dim_products`
 
-Product information.
+Contains product category, dimensions, and weight information.
 
-### dim_sellers
+### `dim_sellers`
 
-Seller information.
+Contains seller identity and location information.
 
-### dim_date
+### `dim_date`
 
-Date dimension used for time-based analysis.
+Contains reusable time attributes including:
+
+- Date key
+- Full date
+- Year
+- Quarter
+- Month
+- Month name
+- Day
+- Day of week
+- Day name
+- Weekend indicator
 
 ---
 
 # Business Questions
 
-The warehouse was designed to answer common analytical questions such as:
+The warehouse supports questions such as:
 
-- What is the total allocated sales revenue?
-- How many distinct orders exist?
-- How many unique customers are there?
-- Which primary payment methods are most popular?
-- Which order statuses occur most frequently?
-- What is the average customer review score?
+| Business Question | Fact Table | Main Dimensions |
+|---|---|---|
+| Monthly revenue | `fact_orders` | `dim_date` |
+| Revenue by category | `fact_orders` | `dim_products` |
+| Top-performing sellers | `fact_orders` | `dim_sellers` |
+| Sales by customer state | `fact_orders` | `dim_customers` |
+| Payment method trends | `fact_orders` | `primary_payment_type` |
+| Average review by category | `fact_orders` | `dim_products` |
+| Revenue by order status | `fact_orders` | `order_status` |
 
 ---
 
 # Dashboard Design
 
-Apache Superset was used to create an interactive dashboard.
+The Apache Superset dashboard contains:
 
 ## KPI Cards
 
-- Total Sales (`sum(allocated_payment_value)`)
-- Total Orders (`count(distinct order_id)`)
+- Total Sales
+- Total Orders
 - Total Customers
-- Average Review Score (`avg(review_score)`)
+- Average Review Score
 
 ## Visualizations
 
-- Payment Type Distribution by `primary_payment_type`
+- Payment Type Distribution
 - Order Status Distribution
-- Revenue by Order Status using `allocated_payment_value`
+- Revenue by Order Status
 - Review Score Distribution
 
-These visualizations provide a concise overview of marketplace performance and support business decision-making.
+Recommended Phase 3 metrics:
+
+```text
+SUM(allocated_payment_value)
+```
+
+```text
+COUNT(DISTINCT order_id)
+```
+
+```text
+COUNT(DISTINCT customer_id)
+```
+
+```text
+AVG(review_score)
+```
 
 ---
 
 # Design Decisions
 
-The following design choices were made during implementation:
+The following choices were made:
 
-- Apache Spark for distributed ETL processing
-- Apache Parquet for optimized storage
-- Hadoop HDFS for distributed file storage
-- Hive External Tables to avoid data duplication
-- Star Schema for analytical queries
-- Apache Superset for dashboard visualization
+- Spark for distributed ingestion
+- Parquet for columnar storage
+- HDFS for distributed storage
+- Hive and Spark ThriftServer for SQL access
+- dbt for modular analytical transformations
+- Airflow for orchestration and monitoring
+- PostgreSQL for Airflow metadata
+- Star Schema for reporting
+- Superset for business intelligence
+- Environment variables for credentials
+- Docker network `bigdata-net` for service communication
 
-These decisions improve scalability, maintainability, and query performance.
+---
+
+# Challenges
+
+## Spark and dbt Interoperability
+
+dbt must query data exposed through Spark ThriftServer while Spark writes Parquet to HDFS.
+
+## Adapter Selection
+
+The dbt adapter must remain compatible with the existing Spark and Hive query layer.
+
+## Payment Multiplication
+
+Joining order items directly with payment rows can duplicate revenue. Payments therefore require aggregation before fact-table joins.
+
+## Fact Grain
+
+The order-item grain must remain stable at one row per `order_id` and `order_item_id`.
+
+## Docker Networking
+
+Airflow containers must reach Spark, HDFS, Superset, PostgreSQL, and ThriftServer through the shared network.
+
+## Idempotency
+
+Spark writes, dbt models, reconciliation outputs, and metadata refresh operations must be safe to rerun.
+
+## Service Readiness
+
+The pipeline must fail early when required services are unavailable.
+
+## Docker Platform Compatibility
+
+ARM64 and AMD64 differences can affect image support and dependency installation.
+
+## Hive Metastore Persistence
+
+Hive metadata must remain available across ThriftServer restarts.
+
+---
+
+# Validation Status
+
+Completed validations include:
+
+- Python compilation for processing and Airflow code
+- Git diff validation
+- Merge-conflict marker checks
+- DAG unit-test execution
+- Two DAG tests passed
+- Four tests were skipped because full Airflow runtime dependencies were unavailable locally
+
+Full end-to-end runtime validation requires all Docker services, Airflow, Spark, HDFS, Hive, dbt, and Superset to be running together.
 
 ---
 
 # Future Improvements
 
-Possible future enhancements include:
-
-- Incremental data loading
-- Additional dimension tables
-- Machine Learning integration
+- Incremental dbt models
+- Airflow dataset-aware scheduling
+- Additional dimensions
+- Slowly Changing Dimensions
+- Kafka streaming
+- Machine-learning models
 - Customer segmentation
 - Sales forecasting
-- Real-time streaming with Apache Kafka
-- Cloud deployment on AWS or Azure
+- Cloud deployment
+- Centralized monitoring
+- Alerting and notifications
